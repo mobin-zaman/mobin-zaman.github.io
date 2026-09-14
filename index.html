@@ -6,7 +6,6 @@
 <meta name="description" content="Mohetuzzaman Mobin — software engineer, AI agent consultant, bassist. I build software with AI agents and make unnecessarily loud noises with four strings." />
 <title>Mohetuzzaman Mobin — Software Engineer / Bassist</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='13' font-size='13'>🕹️</text></svg>" />
-<link rel="stylesheet" href="assets/nes.min.css" />
 <link rel="stylesheet" href="assets/site.css" />
 <style>
   @font-face {
@@ -18,90 +17,90 @@
 </head>
 <body>
 
-<!-- ============ CRT "cart monitor" arcade frame ============ -->
+<!-- ================= CRT cart-monitor terminal ================= -->
 <div class="crt-stage">
-  <div class="crt-cart" aria-hidden="true"></div>
+  <div class="crt-cart" aria-hidden="true"><span class="crt-cart-title">MOBIN.EXE</span></div>
 
   <div class="crt-monitor">
-    <div class="crt-screen">
-      <div class="crt-screen-inner">
+    <div class="crt-screen" id="screen">
+      <div class="scrollwrap">
 
         <!-- ============ HERO ============ -->
         <header style="text-align:center;padding-top:1rem;">
-          <div class="pixel-float" aria-hidden="true" style="font-size:2.6rem;line-height:1;">🕹️</div>
-          <h1 class="site-title" style="margin-top:1rem;font-size:1.5rem;color:var(--nes-title);line-height:1.6;">
+          <div class="pixel-float" aria-hidden="true" style="font-size:2.4rem;line-height:1;">🕹️</div>
+          <h1 class="site-title" style="margin-top:1rem;font-size:1.5rem;">
             Mohetuzzaman<br/>Mobin
           </h1>
-          <p style="margin-top:1rem;color:#a8a38f;">
-            Software engineer · AI agent consultant · bassist
+          <p class="lead small" style="margin-top:1rem;">Software engineer · AI agent consultant · bassist</p>
+          <p class="small" style="margin:0.9rem auto 0;max-width:27rem;color:var(--ink-dim);line-height:2;">
+            I build software using AI agents and occasionally make unnecessarily
+            loud noises with four strings.
           </p>
-          <p style="margin:0.8rem auto 0;max-width:26rem;color:#8f8a78;line-height:1.8;">
-            I build software using AI agents and occasionally make
-            unnecessarily loud noises with four strings.
-          </p>
-          <div class="stagger" style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;margin-top:1.6rem;">
-            <a class="nes-btn is-primary" href="#work">▸ Work</a>
-            <a class="nes-btn" href="#bands">♪ Bands</a>
-            <a class="nes-btn is-warning" href="#contact">✉ Contact</a>
+          <div class="stagger" style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;margin-top:1.7rem;">
+            <a class="crt-btn is-accent" href="#work">▸ Work</a>
+            <a class="crt-btn is-cyan" href="#bands">♫ Bands</a>
+            <a class="crt-btn" href="#contact">✉ Contact</a>
           </div>
-          <div class="arrow-down pixel-float" style="margin-top:2.2rem;font-size:2rem;color:var(--nes-accent);">▼</div>
+          <div class="pixel-float" style="margin-top:2.2rem;font-size:1.6rem;color:var(--ink-dim);">▼</div>
         </header>
 
         <!-- ============ WHAT I DO ============ -->
         <section id="work" style="margin-top:3rem;">
-          <h2 data-reveal style="font-size:1rem;color:var(--nes-title);margin-bottom:1.4rem;">
-            <span class="nes-text is-primary">▣</span> What I do
-          </h2>
-          <div style="display:flex;flex-direction:column;gap:1.2rem;">
-            <div data-reveal class="nes-container with-title is-rounded">
-              <p class="title">Software development</p>
-              <ul class="nes-list is-circle">
-                <li><span class="pixel-float">👉</span> Web development</li>
-                <li><span class="pixel-float">👉</span> Custom software service</li>
-              </ul>
-            </div>
-            <div data-reveal class="nes-container with-title is-rounded">
-              <p class="title">Consulting</p>
-              <ul class="nes-list is-disc">
-                <li><span class="pixel-float">🤖</span> Self hosting</li>
-                <li><span class="pixel-float">🤖</span> AI agents</li>
-              </ul>
-            </div>
-            <div data-reveal class="nes-container with-title is-rounded">
-              <p class="title">Music</p>
-              <ul class="nes-list is-circle" style="list-style:none;padding-left:0;">
-                <li><span class="nes-text is-warning">▶</span> Band One — <a href="https://www.facebook.com/shohojia/" target="_blank" rel="noopener">Shohojia</a></li>
-                <li><span class="nes-text is-warning">▶</span> Band Two — <a href="#urbanGenesisLink" id="urbanGenesisLink">Urban Genesis</a> <span class="nes-text is-disabled">(new band from Bangladesh)</span></li>
-              </ul>
-            </div>
+          <h2 class="crt-h2">What I do</h2>
+
+          <div class="panel is-headline" data-reveal>
+            <h3 class="small crt-hl" style="margin-bottom:0.6rem;">▓ software development</h3>
+            <ul class="crt-list small">
+              <li><span class="marker pixel-float">▸</span> Web development</li>
+              <li><span class="marker pixel-float">▸</span> Custom software service</li>
+            </ul>
+          </div>
+
+          <div class="panel" data-reveal>
+            <h3 class="small crt-hl" style="margin-bottom:0.6rem;">▓ consulting</h3>
+            <ul class="crt-list small">
+              <li><span class="marker pixel-float">▸</span> Self hosting</li>
+              <li><span class="marker pixel-float">▸</span> AI agents</li>
+            </ul>
+          </div>
+
+          <div class="panel is-music" data-reveal>
+            <h3 class="small crt-hl" style="margin-bottom:0.6rem;">▓ music</h3>
+            <ul class="crt-list small">
+              <li><span class="marker">▸</span> Band One — <a href="https://www.facebook.com/shohojia/" target="_blank" rel="noopener" id="shohojiaLink">Shohojia</a></li>
+              <li><span class="marker">▸</span> Band Two — <a href="#urbanGenesisLink" id="urbanGenesisLink">Urban Genesis</a> <span class="crt-label">(new band from Bangladesh)</span></li>
+            </ul>
           </div>
         </section>
 
         <!-- ============ BANDS ============ -->
         <section id="bands" style="margin-top:3rem;">
-          <h2 data-reveal style="font-size:1rem;color:var(--nes-title);margin-bottom:1.4rem;">
-            <span class="nes-text is-warning">♪</span> The bands
-          </h2>
-          <div class="stagger" style="display:flex;flex-direction:column;gap:1.2rem;">
+          <h2 class="crt-h2">The bands</h2>
 
-            <div class="nes-container is-rounded">
+          <div class="stagger">
+
+            <div class="panel is-music">
               <div style="display:flex;gap:1rem;align-items:flex-start;flex-wrap:wrap;">
-                <div class="pixel-float" style="font-size:3rem;" aria-hidden="true">🎤</div>
+                <div class="pixel-float" style="font-size:2.6rem;" aria-hidden="true">🎤</div>
                 <div style="flex:1;min-width:12rem;">
-                  <h3 style="font-size:0.85rem;color:var(--nes-accent);">Band One · Shohojia</h3>
-                  <p style="font-size:0.7rem;line-height:1.9;color:#9a9582;">A Bangladeshi band. Catch the latest on the official Facebook page.</p>
-                  <a class="nes-btn is-primary" href="https://www.facebook.com/shohojia/" target="_blank" rel="noopener" id="shohojiaLink">Facebook</a>
+                  <h3 class="small crt-hl" style="margin-bottom:0.5rem;">Band One · Shohojia</h3>
+                  <p class="small crt-label">A Bangladeshi band. Catch the latest on the official Facebook page.</p>
+                  <div style="margin-top:0.9rem;">
+                    <a class="crt-btn is-accent" href="https://www.facebook.com/shohojia/" target="_blank" rel="noopener">Facebook</a>
+                  </div>
                 </div>
               </div>
             </div>
 
-            <div class="nes-container is-rounded">
+            <div class="panel is-music">
               <div style="display:flex;gap:1rem;align-items:flex-start;flex-wrap:wrap;">
-                <div class="pixel-float" style="font-size:3rem;" aria-hidden="true">🎸</div>
+                <div class="pixel-float" style="font-size:2.6rem;" aria-hidden="true">🎸</div>
                 <div style="flex:1;min-width:12rem;">
-                  <h3 style="font-size:0.85rem;color:var(--nes-accent);">Band Two · Urban Genesis</h3>
-                  <p style="font-size:0.7rem;line-height:1.9;color:#9a9582;">A new band from Bangladesh. Find us on Facebook.</p>
-                  <a class="nes-btn" href="#urbanGenesisLink" id="urbanGenesisLink2" rel="noopener">Facebook</a>
+                  <h3 class="small crt-hl" style="margin-bottom:0.5rem;">Band Two · Urban Genesis</h3>
+                  <p class="small crt-label">A new band from Bangladesh. Find us on Facebook.</p>
+                  <div style="margin-top:0.9rem;">
+                    <a class="crt-btn is-cyan" href="#urbanGenesisLink" id="urbanGenesisLink2">Facebook</a>
+                  </div>
                 </div>
               </div>
             </div>
@@ -111,29 +110,28 @@
 
         <!-- ============ CONTACT ============ -->
         <section id="contact" style="margin-top:3rem;">
-          <h2 data-reveal style="font-size:1rem;color:var(--nes-title);margin-bottom:1.4rem;">
-            <span class="nes-text is-success">✉</span> Contact
-          </h2>
-          <div data-reveal class="nes-container with-title is-rounded">
-            <p class="title">Get in touch</p>
-            <ul class="nes-list is-disc">
-              <li><span class="pixel-float">📧</span> Email — <a href="mailto:mohetuzzamanmobin@gmail.com">mohetuzzamanmobin@gmail.com</a></li>
-              <li><span class="pixel-float">🐙</span> GitHub — <a href="https://github.com/mobin-zaman" target="_blank" rel="noopener">github.com/mobin-zaman</a></li>
-              <li><span class="pixel-float">🦊</span> GitLab — <a href="https://gitlab.com" target="_blank" rel="noopener">gitlab.com</a></li>
+          <h2 class="crt-h2">Contact</h2>
+
+          <div class="panel" data-reveal>
+            <h3 class="small crt-hl" style="margin-bottom:0.7rem;">▓ get in touch</h3>
+            <ul class="crt-list small">
+              <li><span class="marker">▸</span> <span class="crt-label">Email —</span> <a href="mailto:mohetuzzamanmobin@gmail.com">mohetuzzamanmobin@gmail.com</a></li>
+              <li><span class="marker">▸</span> <span class="crt-label">GitHub —</span> <a href="https://github.com/mobin-zaman" target="_blank" rel="noopener">github.com/mobin-zaman</a></li>
+              <li><span class="marker">▸</span> <span class="crt-label">GitLab —</span> <a href="https://gitlab.com" target="_blank" rel="noopener">gitlab.com</a></li>
             </ul>
-            <div style="margin-top:0.8rem;display:flex;gap:0.6rem;flex-wrap:wrap;">
-              <a class="nes-btn is-success" href="mailto:mohetuzzamanmobin@gmail.com">✉ Send email</a>
-              <a class="nes-btn" href="https://github.com/mobin-zaman" target="_blank" rel="noopener">∘ GitHub</a>
+            <div style="margin-top:1rem;display:flex;gap:0.7rem;flex-wrap:wrap;">
+              <a class="crt-btn is-accent" href="mailto:mohetuzzamanmobin@gmail.com">✉ Send email</a>
+              <a class="crt-btn" href="https://github.com/mobin-zaman" target="_blank" rel="noopener">♯ GitHub</a>
             </div>
           </div>
         </section>
 
-        <footer style="margin-top:3rem;text-align:center;font-size:0.6rem;color:#6f6a5a;line-height:2;">
-          <p>Made with 🕹️ + 🎸 · NES.css · Press&nbsp;Start&nbsp;2P</p>
+        <footer style="margin-top:3rem;text-align:center;font-size:0.55rem;color:var(--ink-dim);line-height:2;">
+          <p>Made with 🕹️ + 🎸 · pure CRT · Press&nbsp;Start&nbsp;2P</p>
           <p>&copy; <span id="year"></span> Mohetuzzaman Mobin</p>
         </footer>
 
-      </div><!-- /crt-screen-inner -->
+      </div><!-- /scrollwrap -->
     </div><!-- /crt-screen -->
 
     <div class="crt-controls">
@@ -148,7 +146,7 @@
 
   // Scroll-reveal: animate transform/opacity only via WAAPI; once per element.
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const io = new IntersectionObserver(function(entries) {
+  const io = new IntersectionObserver(function(entries){
     entries.forEach(function(e){
       if (e.isIntersecting) {
         const el = e.target;

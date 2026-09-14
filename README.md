@@ -2,9 +2,9 @@
 
 Personal site for **Mohetuzzaman Mobin** — software engineer, AI agent consultant, bassist.
 
-- Built with the [NES.css](https://github.com/nostalgic-css/NES.css) pixel design system
-- Animation layer follows the Emil Kowalski design-engineering philosophy (transform/opacity only, custom curves, press feedback, reduced-motion aware)
-- Pixel font: Press Start 2P (self-hosted)
+- **Pure CRT retro design** — a CRT "cart-monitor" terminal: NES-style game cartridge on top, monitor bezel, dark glass screen with scanlines + glow, green/amber phosphor typography, chunky beveled CRT buttons.
+- Pixel font: Press Start 2P (self-hosted).
+- Motion layer follows the Emil Kowalski design-engineering philosophy (transform/opacity only, custom curves, press feedback, reduced-motion + hover gating, staggered reveals).
 - Live at https://mobin-zaman.github.io/
 
 ## Sections
