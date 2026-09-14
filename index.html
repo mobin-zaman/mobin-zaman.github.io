@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <meta name="description" content="Mohetuzzaman Mobin — software engineer, AI agent consultant, bassist. I build software with AI agents and make unnecessarily loud noises with four strings." />
 <title>Mohetuzzaman Mobin — Software Engineer / Bassist</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='13' font-size='13'>🎸</text></svg>" />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='13' font-size='13'>🕹️</text></svg>" />
 <link rel="stylesheet" href="assets/nes.min.css" />
 <link rel="stylesheet" href="assets/site.css" />
 <style>
@@ -18,151 +18,155 @@
 </head>
 <body>
 
-<main class="nes-container is-rounded" style="max-width:900px;margin:0 auto;padding:1.5rem 1.5rem 3rem;">
+<!-- ============ CRT "cart monitor" arcade frame ============ -->
+<div class="crt-stage">
+  <div class="crt-cart" aria-hidden="true"></div>
 
-  <!-- ============ HERO ============ -->
-  <header data-reveal class="is-in" style="text-align:center;padding-top:1rem;">
-    <div class="pixel-float" aria-hidden="true" style="font-size:2.6rem;line-height:1;">🎮</div>
-    <h1 class="site-title" style="margin-top:1rem;font-size:1.5rem;color:var(--nes-title);line-height:1.6;">
-      Mohetuzzaman<br/>Mobin
-    </h1>
-    <p style="margin-top:1rem;color:#a8a38f;">
-      Software engineer · AI agent consultant · bassist
-    </p>
-    <p style="margin:0.8rem auto 0;max-width:26rem;color:#8f8a78;line-height:1.8;">
-      I build software using AI agents and occasionally make
-      unnecessarily loud noises with four strings.
-    </p>
-    <div class="stagger is-in" style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;margin-top:1.6rem;">
-      <a class="nes-btn is-primary" href="#work">▸ Work</a>
-      <a class="nes-btn" href="#bands">♪ Bands</a>
-      <a class="nes-btn is-warning" href="#contact">✉ Contact</a>
-    </div>
-    <div class="arrow-down pixel-float" style="margin-top:2.4rem;font-size:2rem;color:var(--nes-accent);">▼</div>
-  </header>
+  <div class="crt-monitor">
+    <div class="crt-screen">
+      <div class="crt-screen-inner">
 
-  <!-- ============ WHAT I DO ============ -->
-  <section id="work" style="margin-top:3rem;">
-    <h2 data-reveal style="font-size:1rem;color:var(--nes-title);margin-bottom:1.4rem;">
-      <span class="nes-text is-primary">▣</span> What I do
-    </h2>
-
-    <div style="display:flex;flex-direction:column;gap:1.2rem;">
-
-      <div data-reveal class="nes-container with-title is-rounded">
-        <p class="title">Software development</p>
-        <ul class="nes-list is-circle">
-          <li><span class="pixel-float">👉</span> Web development</li>
-          <li><span class="pixel-float">👉</span> Custom software service</li>
-        </ul>
-      </div>
-
-      <div data-reveal class="nes-container with-title is-rounded">
-        <p class="title">Consulting</p>
-        <ul class="nes-list is-disc">
-          <li><span class="pixel-float">🤖</span> Self hosting</li>
-          <li><span class="pixel-float">🤖</span> AI agents</li>
-        </ul>
-      </div>
-
-      <div data-reveal class="nes-container with-title is-rounded">
-        <p class="title">Music</p>
-        <ul class="nes-list is-circle" style="list-style:none;padding-left:0;">
-          <li><span class="nes-text is-warning">▶</span> Band One — <a href="https://www.facebook.com/shohojia/" target="_blank" rel="noopener">Shohojia</a></li>
-          <li><span class="nes-text is-warning">▶</span> Band Two — <a href="#" id="urbanGenesisLink" rel="noopener">Urban Genesis</a> <span class="nes-text is-disabled">(new band from Bangladesh)</span></li>
-        </ul>
-      </div>
-
-    </div>
-  </section>
-
-  <!-- ============ BANDS ============ -->
-  <section id="bands" style="margin-top:3rem;">
-    <h2 data-reveal style="font-size:1rem;color:var(--nes-title);margin-bottom:1.4rem;">
-      <span class="nes-text is-warning">♪</span> The bands
-    </h2>
-
-    <div class="stagger" style="display:flex;flex-direction:column;gap:1.2rem;">
-
-      <div class="nes-container is-rounded">
-        <div style="display:flex;gap:1rem;align-items:flex-start;flex-wrap:wrap;">
-          <div class="pixel-float" style="font-size:3rem;" aria-hidden="true">🎤</div>
-          <div style="flex:1;min-width:12rem;">
-            <h3 style="font-size:0.85rem;color:var(--nes-accent);">Band One · Shohojia</h3>
-            <p style="font-size:0.7rem;line-height:1.9;color:#9a9582;">A Bangladeshi band. Catch the latest on the official Facebook page.</p>
-            <a class="nes-btn is-primary" href="https://www.facebook.com/shohojia/" target="_blank" rel="noopener">Facebook</a>
+        <!-- ============ HERO ============ -->
+        <header style="text-align:center;padding-top:1rem;">
+          <div class="pixel-float" aria-hidden="true" style="font-size:2.6rem;line-height:1;">🕹️</div>
+          <h1 class="site-title" style="margin-top:1rem;font-size:1.5rem;color:var(--nes-title);line-height:1.6;">
+            Mohetuzzaman<br/>Mobin
+          </h1>
+          <p style="margin-top:1rem;color:#a8a38f;">
+            Software engineer · AI agent consultant · bassist
+          </p>
+          <p style="margin:0.8rem auto 0;max-width:26rem;color:#8f8a78;line-height:1.8;">
+            I build software using AI agents and occasionally make
+            unnecessarily loud noises with four strings.
+          </p>
+          <div class="stagger" style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;margin-top:1.6rem;">
+            <a class="nes-btn is-primary" href="#work">▸ Work</a>
+            <a class="nes-btn" href="#bands">♪ Bands</a>
+            <a class="nes-btn is-warning" href="#contact">✉ Contact</a>
           </div>
-        </div>
-      </div>
+          <div class="arrow-down pixel-float" style="margin-top:2.2rem;font-size:2rem;color:var(--nes-accent);">▼</div>
+        </header>
 
-      <div class="nes-container is-rounded">
-        <div style="display:flex;gap:1rem;align-items:flex-start;flex-wrap:wrap;">
-          <div class="pixel-float" style="font-size:3rem;" aria-hidden="true">🎸</div>
-          <div style="flex:1;min-width:12rem;">
-            <h3 style="font-size:0.85rem;color:var(--nes-accent);">Band Two · Urban Genesis</h3>
-            <p style="font-size:0.7rem;line-height:1.9;color:#9a9582;">A new band from Bangladesh. Find us on Facebook.</p>
-            <a class="nes-btn" href="#" id="urbanGenesisLink2" rel="noopener">Facebook</a>
+        <!-- ============ WHAT I DO ============ -->
+        <section id="work" style="margin-top:3rem;">
+          <h2 data-reveal style="font-size:1rem;color:var(--nes-title);margin-bottom:1.4rem;">
+            <span class="nes-text is-primary">▣</span> What I do
+          </h2>
+          <div style="display:flex;flex-direction:column;gap:1.2rem;">
+            <div data-reveal class="nes-container with-title is-rounded">
+              <p class="title">Software development</p>
+              <ul class="nes-list is-circle">
+                <li><span class="pixel-float">👉</span> Web development</li>
+                <li><span class="pixel-float">👉</span> Custom software service</li>
+              </ul>
+            </div>
+            <div data-reveal class="nes-container with-title is-rounded">
+              <p class="title">Consulting</p>
+              <ul class="nes-list is-disc">
+                <li><span class="pixel-float">🤖</span> Self hosting</li>
+                <li><span class="pixel-float">🤖</span> AI agents</li>
+              </ul>
+            </div>
+            <div data-reveal class="nes-container with-title is-rounded">
+              <p class="title">Music</p>
+              <ul class="nes-list is-circle" style="list-style:none;padding-left:0;">
+                <li><span class="nes-text is-warning">▶</span> Band One — <a href="https://www.facebook.com/shohojia/" target="_blank" rel="noopener">Shohojia</a></li>
+                <li><span class="nes-text is-warning">▶</span> Band Two — <a href="#urbanGenesisLink" id="urbanGenesisLink">Urban Genesis</a> <span class="nes-text is-disabled">(new band from Bangladesh)</span></li>
+              </ul>
+            </div>
           </div>
-        </div>
-      </div>
+        </section>
 
+        <!-- ============ BANDS ============ -->
+        <section id="bands" style="margin-top:3rem;">
+          <h2 data-reveal style="font-size:1rem;color:var(--nes-title);margin-bottom:1.4rem;">
+            <span class="nes-text is-warning">♪</span> The bands
+          </h2>
+          <div class="stagger" style="display:flex;flex-direction:column;gap:1.2rem;">
+
+            <div class="nes-container is-rounded">
+              <div style="display:flex;gap:1rem;align-items:flex-start;flex-wrap:wrap;">
+                <div class="pixel-float" style="font-size:3rem;" aria-hidden="true">🎤</div>
+                <div style="flex:1;min-width:12rem;">
+                  <h3 style="font-size:0.85rem;color:var(--nes-accent);">Band One · Shohojia</h3>
+                  <p style="font-size:0.7rem;line-height:1.9;color:#9a9582;">A Bangladeshi band. Catch the latest on the official Facebook page.</p>
+                  <a class="nes-btn is-primary" href="https://www.facebook.com/shohojia/" target="_blank" rel="noopener" id="shohojiaLink">Facebook</a>
+                </div>
+              </div>
+            </div>
+
+            <div class="nes-container is-rounded">
+              <div style="display:flex;gap:1rem;align-items:flex-start;flex-wrap:wrap;">
+                <div class="pixel-float" style="font-size:3rem;" aria-hidden="true">🎸</div>
+                <div style="flex:1;min-width:12rem;">
+                  <h3 style="font-size:0.85rem;color:var(--nes-accent);">Band Two · Urban Genesis</h3>
+                  <p style="font-size:0.7rem;line-height:1.9;color:#9a9582;">A new band from Bangladesh. Find us on Facebook.</p>
+                  <a class="nes-btn" href="#urbanGenesisLink" id="urbanGenesisLink2" rel="noopener">Facebook</a>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- ============ CONTACT ============ -->
+        <section id="contact" style="margin-top:3rem;">
+          <h2 data-reveal style="font-size:1rem;color:var(--nes-title);margin-bottom:1.4rem;">
+            <span class="nes-text is-success">✉</span> Contact
+          </h2>
+          <div data-reveal class="nes-container with-title is-rounded">
+            <p class="title">Get in touch</p>
+            <ul class="nes-list is-disc">
+              <li><span class="pixel-float">📧</span> Email — <a href="mailto:mohetuzzamanmobin@gmail.com">mohetuzzamanmobin@gmail.com</a></li>
+              <li><span class="pixel-float">🐙</span> GitHub — <a href="https://github.com/mobin-zaman" target="_blank" rel="noopener">github.com/mobin-zaman</a></li>
+              <li><span class="pixel-float">🦊</span> GitLab — <a href="https://gitlab.com" target="_blank" rel="noopener">gitlab.com</a></li>
+            </ul>
+            <div style="margin-top:0.8rem;display:flex;gap:0.6rem;flex-wrap:wrap;">
+              <a class="nes-btn is-success" href="mailto:mohetuzzamanmobin@gmail.com">✉ Send email</a>
+              <a class="nes-btn" href="https://github.com/mobin-zaman" target="_blank" rel="noopener">∘ GitHub</a>
+            </div>
+          </div>
+        </section>
+
+        <footer style="margin-top:3rem;text-align:center;font-size:0.6rem;color:#6f6a5a;line-height:2;">
+          <p>Made with 🕹️ + 🎸 · NES.css · Press&nbsp;Start&nbsp;2P</p>
+          <p>&copy; <span id="year"></span> Mohetuzzaman Mobin</p>
+        </footer>
+
+      </div><!-- /crt-screen-inner -->
+    </div><!-- /crt-screen -->
+
+    <div class="crt-controls">
+      <span class="crt-power"><span class="crt-led"></span> POWER</span>
+      <span class="crt-brand">MOBIN-1</span>
     </div>
-  </section>
-
-  <!-- ============ CONTACT ============ -->
-  <section id="contact" style="margin-top:3rem;">
-    <h2 data-reveal style="font-size:1rem;color:var(--nes-title);margin-bottom:1.4rem;">
-      <span class="nes-text is-success">✉</span> Contact
-    </h2>
-
-    <div data-reveal class="nes-container with-title is-rounded">
-      <p class="title">Get in touch</p>
-      <ul class="nes-list is-disc">
-        <li><span class="pixel-float">📧</span> Email — <a href="mailto:mohetuzzamanmobin@gmail.com">mohetuzzamanmobin@gmail.com</a></li>
-        <li><span class="pixel-float">🐙</span> GitHub — <a href="https://github.com/mobin-zaman" target="_blank" rel="noopener">github.com/mobin-zaman</a></li>
-        <li><span class="pixel-float">🦊</span> GitLab — <a href="https://gitlab.com" target="_blank" rel="noopener">gitlab.com</a></li>
-      </ul>
-      <div style="margin-top:0.8rem;display:flex;gap:0.6rem;flex-wrap:wrap;">
-        <a class="nes-btn is-success" href="mailto:mohetuzzamanmobin@gmail.com">✉ Send email</a>
-        <a class="nes-btn" href="https://github.com/mobin-zaman" target="_blank" rel="noopener">∘ GitHub</a>
-      </div>
-    </div>
-  </section>
-
-  <footer data-reveal style="margin-top:3rem;text-align:center;font-size:0.6rem;color:#6f6a5a;line-height:2;">
-    <p>Made with 🖥️ + 🎸 · NES.css · Press&nbsp;Start&nbsp;2P</p>
-    <p>&copy; <span id="year"></span> Mohetuzzaman Mobin</p>
-  </footer>
-
-</main>
+  </div><!-- /crt-monitor -->
+</div><!-- /crt-stage -->
 
 <script>
-  // Press Start font reserved; year autofill
   document.getElementById('year').textContent = new Date().getFullYear();
 
   // Scroll-reveal: animate transform/opacity only via WAAPI; once per element.
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const io = new IntersectionObserver((entries) => {
-    for (const e of entries) {
+  const io = new IntersectionObserver(function(entries) {
+    entries.forEach(function(e){
       if (e.isIntersecting) {
         const el = e.target;
         io.unobserve(el);
-        if (reduce) { el.classList.add('is-in'); continue; }
+        if (reduce) { el.classList.add('is-in'); return; }
         el.animate(
-          [
-            { opacity: 0, transform: 'translateY(14px)' },
-            { opacity: 1, transform: 'translateY(0)' }
-          ],
+          [{ opacity: 0, transform: 'translateY(14px)' },
+           { opacity: 1, transform: 'translateY(0)' }],
           { duration: 320, easing: 'cubic-bezier(0.23, 1, 0.32, 1)', fill: 'forwards' }
         );
-        el.style.opacity = '1'; // fallback
+        el.style.opacity = '1';
         el.classList.add('is-in');
       }
-    }
+    });
   }, { threshold: 0.15, rootMargin: '-40px' });
 
-  document.querySelectorAll('[data-reveal]:not(.is-in)').forEach(el => io.observe(el));
-  document.querySelectorAll('.stagger').forEach(el => io.observe(el));
+  document.querySelectorAll('[data-reveal]:not(.is-in)').forEach(function(el){ io.observe(el); });
+  document.querySelectorAll('.stagger').forEach(function(el){ io.observe(el); });
 </script>
 </body>
 </html>
