@@ -15,7 +15,6 @@
     --lcd-1: #306230;
     --lcd-2: #8bac0f;
     --lcd-3: #9bbc0f;
-    --red-led: #d42020;
     --btn-purple: #6a1b7a;
     --font-pixel: "Press Start 2P", "VT323", "Courier New", monospace;
     --font-lcd: "VT323", "Courier New", monospace;
@@ -84,31 +83,6 @@
     white-space: nowrap;
     text-align: center;
   }
-  .power-led {
-    position: absolute;
-    top: 48%;
-    left: 8px;
-    transform: translateY(-50%);
-    text-align: center;
-    z-index: 2;
-  }
-  .power-led::before {
-    content: "";
-    display: block;
-    width: 8px; height: 8px;
-    border-radius: 50%;
-    background: var(--red-led);
-    box-shadow: 0 0 6px var(--red-led), inset -1px -1px 2px rgba(0,0,0,0.4);
-    margin: 0 auto 4px;
-    animation: blink 2s steps(1) infinite;
-  }
-  @keyframes blink { 50% { opacity: .55; } }
-  .power-led-label {
-    color: var(--screen-bezel);
-    font-family: var(--font-pixel);
-    font-size: 6px;
-    letter-spacing: .5px;
-  }
   .lcd {
     background: var(--lcd-3);
     aspect-ratio: 10 / 9;
@@ -156,16 +130,33 @@
   pre.ascii {
     font-family: "Courier New", monospace;
     font-size: 6.1px;
-    line-height: 5.6px;
+    line-height: 6.4px;
     color: var(--lcd-1);
     letter-spacing: 0;
     user-select: none;
+    display: block;
   }
   .title-title { font-family: var(--font-pixel); font-size: 12px; letter-spacing: 1px; }
   .title-sub { font-family: var(--font-pixel); font-size: 7px; color: var(--lcd-1); letter-spacing: .5px; }
   .blink { animation: t-blink 1s steps(1) infinite; }
   @keyframes t-blink { 50% { opacity: 0; } }
   .press-start { font-family: var(--font-pixel); font-size: 8px; margin-top: 2px; }
+
+  /* power-on boot: a scanline sweep reveals the screen */
+  .lcd.booting::before {
+    content: "";
+    position: absolute; inset: 0; z-index: 10; pointer-events: none;
+    background: linear-gradient(to bottom,
+      transparent 0 42%,
+      rgba(15,56,15,0.55) 50%,
+      transparent 50.8% 100%);
+    background-size: 100% 200%;
+    background-position: 0 -100%;
+    animation: boot-scan .45s steps(6) forwards;
+  }
+  @keyframes boot-scan { 100% { background-position: 0 100%; } }
+  .screen.enter { animation: scr-in .22s ease-out; }
+  @keyframes scr-in { from { opacity: 0; transform: translateY(6px); } }
 
   /* menu screens */
   .menu-scroll { flex: 1; min-height: 0; overflow: hidden; position: relative; margin-top: 4px;}
@@ -279,7 +270,6 @@
 
 <div class="gameboy" id="gameboy">
   <div class="screen-bezel">
-    <div class="power-led"><span class="power-led-label">BATTERY</span></div>
     <div class="lcd" id="lcd">
       <div class="screen" id="scr-title">
         <h2>MOBIN BOY DMG</h2>
@@ -338,7 +328,8 @@
 
 <div class="legend">
   <b>D-PAD</b> move &nbsp;·&nbsp; <b>A</b> select/enter <kbd>Z</kbd> <kbd>↵</kbd><br>
-  <b>B</b> back <kbd>X</kbd> &nbsp;·&nbsp; <b>START</b> menu <kbd>Enter</kbd> &nbsp;·&nbsp; <b>SELECT</b> home <kbd>Shift</kbd>
+  <b>B</b> back <kbd>X</kbd> &nbsp;·&nbsp; <b>START</b> boot/menu <kbd>Enter</kbd> &nbsp;·&nbsp; <b>SELECT</b> home <kbd>Shift</kbd><br>
+  <b>M</b> sound on/off &nbsp;·&nbsp; a Game Boy DMG lowers your HP with 8-bit chirps
 </div>
 
 <footer>
@@ -350,35 +341,37 @@
  *  Data tree — exactly the requested structure.
  * ------------------------------------------------------------------ */
 const AVATAR = /*ASCII*/`
-                                                  
-                                                  
-                                                  
-                                                  
-                                                  
-                    .:-==-:.                      
-                 -+#%@@@%@@@#+.                   
-                 .#@@@%%%%%%%%%%%=                
-                 *%%%%%%%%%@@%%@@%+               
-                =@%%@@%%@%%%%%@%%%%=              
-                *@%*-:..--: ..::*%%.              
-                +@%:::::. :::::-*@=               
-                -@%+=   :-=   :.+#                
-                 +%=:...: .:...-#:                
-                  :#+-:.:--:.:=#+                 
-                   .+*+=#==*#*#*                  
-                     :+#*+#+**:                   
-                       *:::. *..:....             
-                  :----*:    :-=+*##*##+=:.       
-             :-=+***+=:....       .:::-==++=--:.  
-          :+**=:                            ..... 
-        :+*=.                                       
-        ::                                            
+                 #%%%%%#
+             #%%%%%%%%%%%%%#
+           #%%%%%%%%%%%%%%%%%#
+         #                     #
+        #                       #
+        #                       #
+        #      ===========      #
+            @@:@:@@@@@@@:@:@@
+            @@:@:@@   @@:@:@@
+            @@:@:@@   @@:@:@@
+             @@@@@     @@@@@
+              @@@       @@@
+                    +
+                    +
+                    +
+                    *
+                %%%%%%%%%
+                %##%##%##
+                 #%-#-##
+                  ##%##
+                 ##%##%#
+                  =====
+           ### ### ### ### ###
+       ## ### ### ### ### ### ###
+      ## ### ### ### ### ### ### ##
+      # ### ### ### ### ### ### ###
 `/*END*/;
 
 const SITE = {
   header: { name: "Mohetuzzaman Mobin",
-            role: "software engineer / AI agent consultant / bassist",
-            blurb: "I build software using AI agents and occasionally make unnecessarily loud noises with four strings." },
+            role: "software engineer / AI agent consultant / bassist" },
   menu: [
     { key: "dev",  title: "Software development", note: "WEB + CUSTOM", items: [
         { name: "Web development",
@@ -590,12 +583,73 @@ function scrollSel(list, kind){
 }
 
 /* ------------------------------------------------------------------ *
+ *  8-bit audio — synthesized Game Boy beeps (stereo-panned), no files.
+ *  Unlocks lazily on the first user gesture (autoplay policy).
+ * ------------------------------------------------------------------ */
+let AC = null, soundOn = true, booted = false;
+function ac(){
+  if (!AC){ try { AC = new (window.AudioContext||window.webkitAudioContext)(); } catch(e){} }
+  return AC;
+}
+function resumeAudio(){ const c = ac(); if (c && c.state === "suspended") c.resume(); }
+function tone(freq, ms, type, vol, pan){
+  const c = ac(); if (!soundOn || !c) return;
+  const t = c.currentTime;
+  const o = c.createOscillator();
+  const g = c.createGain();
+  o.type = type || "square";
+  o.frequency.setValueAtTime(freq, t);
+  o.frequency.exponentialRampToValueAtTime(freq*0.94, t+ms/1000);
+  g.gain.setValueAtTime(vol, t);
+  g.gain.exponentialRampToValueAtTime(0.0001, t+ms/1000);
+  const panNode = c.createStereoPanner ? c.createStereoPanner() : null;
+  if (panNode){ panNode.pan.value = pan; o.connect(panNode); panNode.connect(g); }
+  else { o.connect(g); }
+  g.connect(c.destination);
+  o.start(t); o.stop(t + ms/1000 + 0.02);
+}
+function beep(){ tone(760, 65, "square", 0.08, 0); }
+function beepHigh(){ tone(1040, 70, "square", 0.08, 0.4); }
+function beepBack(){ tone(520, 70, "triangle", 0.09, -0.4); }
+function beat(){ tone(460, 40, "square", 0.045, 0); }
+function jingle(){ // boot fanfare: two stereo-spread arpeggio voices
+  const notes = [[523,-0.3,0],[659,-0.15,0.11],[784,0.15,0.22],[1047,0.3,0.36]];
+  notes.forEach(n=>{
+    setTimeout(()=>{
+      tone(n[0], 95, "square",  0.09, n[1]);
+      tone(n[0]*2, 95, "triangle", 0.05, -n[1]);
+    }, n[2]*1000);
+  });
+}
+function toggleSound(){
+  soundOn = !soundOn;
+  if (soundOn){ resumeAudio(); beepHigh(); }
+  return soundOn;
+}
+function bootAnim(){
+  const l = $("lcd"); l.classList.add("booting");
+  $("scr-title").classList.add("enter");
+  setTimeout(()=>{ l.classList.remove("booting"); setTimeout(()=>$("scr-title").classList.remove("enter"), 400); }, 500);
+}
+// unlock audio + mark booted on first interaction
+["keydown","click","pointerdown"].forEach(evt => document.addEventListener(evt, ()=>{
+  if (!booted){ booted = true; resumeAudio(); }
+}, { once:true }));
+
+/* ------------------------------------------------------------------ *
  *  Button dispatch — the gameboy controls all drive this.
  * ------------------------------------------------------------------ */
 function press(btn){
   if (S.lock) return;
   flash(btn);
   const cur = S.screen;
+  // sound per action
+  if (cur === "title" && (btn==="A" || btn==="START")){ jingle(); bootAnim(); }
+  else if (btn === "START"){ beepHigh(); }
+  else if (btn === "SELECT"){ beepBack(); }
+  else if (btn === "B"){ beepBack(); }
+  else if (btn === "A"){ beep(); }
+  else if (btn === "UP" || btn === "DOWN" || btn === "LEFT" || btn === "RIGHT"){ beat(); }
   if (cur === "title"){
     if (btn==="A" || btn==="START"){ S.on=true; S.menuIdx=0; S.hp=HP_MAX; show("menu"); renderMenu(); }
     return;
@@ -652,6 +706,7 @@ const KEYS = {
   Shift:"SELECT", Start:"START"
 };
 document.addEventListener("keydown", e=>{
+  if (e.key === "m" || e.key === "M"){ toggleSound(); return; }
   if (KEYS[e.key] !== undefined){ e.preventDefault(); press(KEYS[e.key]); }
 });
 
