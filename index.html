@@ -127,17 +127,14 @@
 
   /* title */
   .title-body { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 0; }
-  pre.ascii {
-    font-family: "Courier New", monospace;
-    font-size: 9px;
-    line-height: 9.3px;
-    font-weight: bold;
-    color: var(--lcd-0);
-    text-shadow: 1px 1px 0 var(--lcd-2);
-    letter-spacing: 0;
-    user-select: none;
-    display: block;
-    pointer-events: none;
+  img.avatar {
+    width: 200px;
+    height: 200px;
+    border-radius: 6px;
+    object-fit: cover;
+    image-rendering: pixelated;
+    background: var(--lcd-2);
+    box-shadow: inset 0 0 0 2px var(--lcd-1), 0 0 0 1px var(--lcd-2);
   }
   .title-title { font-family: var(--font-pixel); font-size: 12px; letter-spacing: 1px; }
   .title-sub { font-family: var(--font-pixel); font-size: 7px; color: var(--lcd-1); letter-spacing: .5px; }
@@ -269,7 +266,7 @@
       <div class="screen" id="scr-title">
         <h2>MOBIN BOY DMG</h2>
         <div class="title-body">
-          <pre class="ascii" id="avatar"></pre>
+          <img class="avatar" id="avatar" src="assets/portrait-lcd.png" alt="Chalk portrait of Mohetuzzaman Mobin">
           <div class="title-title">MOHETUZZAMAN<br>MOBIN</div>
           <div class="title-sub">SW ENGINEER // AI AGENT // BASSIST</div>
           <div class="title-tag">I BUILD SOFTWARE WITH AI AGENTS &amp; MAKE</div>
@@ -331,34 +328,6 @@
 /* ------------------------------------------------------------------ *
  *  Data tree — exactly the requested structure.
  * ------------------------------------------------------------------ */
-const AVATAR = /*ASCII*/`                #%%%%%#
-             #%%%%%%%%%%%%%#
-           #%%%%%%%%%%%%%%%%%#
-         #                     #
-        #                       #
-        #                       #
-        #      ===========      #
-            @@:@:@@@@@@@:@:@@
-            @@:@:@@   @@:@:@@
-            @@:@:@@   @@:@:@@
-             @@@@@     @@@@@
-              @@@       @@@
-                    +
-                    +
-                    +
-                    *
-                %%%%%%%%%
-                %##%##%##
-                 #%-#-##
-                  ##%##
-                 ##%##%#
-                  =====
-           ### ### ### ### ###
-       ## ### ### ### ### ### ###
-      ## ### ### ### ### ### ### ##
-      # ### ### ### ### ### ### ###
-`/*END*/;
-
 const SITE = {
   header: { name: "Mohetuzzaman Mobin",
             role: "software engineer / AI agent consultant / bassist" },
@@ -453,7 +422,7 @@ function renderScreen(){
 
 /* --- title --- */
 function renderTitle(){
-  $("avatar").textContent = AVATAR;
+  // portrait is a static <img>; nothing to render
 }
 function titleStart(){
   S.on = true; S.menuIdx = 0; S.cat = null;
