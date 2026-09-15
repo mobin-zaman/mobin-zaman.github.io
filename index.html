@@ -85,7 +85,7 @@
   }
   .lcd {
     background: var(--lcd-3);
-    aspect-ratio: 10 / 9;
+    aspect-ratio: 10 / 11.5;
     padding: 12px 12px 10px;
     color: var(--lcd-0);
     box-shadow: inset 0 0 0 2px var(--lcd-2);
@@ -126,18 +126,22 @@
   .lcd .sub { color: var(--lcd-1); }
 
   /* title */
-  .title-body { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; min-height: 0; }
+  .title-body { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 0; }
   pre.ascii {
     font-family: "Courier New", monospace;
-    font-size: 6.1px;
-    line-height: 6.4px;
-    color: var(--lcd-1);
+    font-size: 9px;
+    line-height: 9.3px;
+    font-weight: bold;
+    color: var(--lcd-0);
+    text-shadow: 1px 1px 0 var(--lcd-2);
     letter-spacing: 0;
     user-select: none;
     display: block;
+    pointer-events: none;
   }
   .title-title { font-family: var(--font-pixel); font-size: 12px; letter-spacing: 1px; }
   .title-sub { font-family: var(--font-pixel); font-size: 7px; color: var(--lcd-1); letter-spacing: .5px; }
+  .title-tag { font-family: var(--font-pixel); font-size: 7px; color: var(--lcd-1); letter-spacing: 1px; margin-top: 1px; }
   .blink { animation: t-blink 1s steps(1) infinite; }
   @keyframes t-blink { 50% { opacity: 0; } }
   .press-start { font-family: var(--font-pixel); font-size: 8px; margin-top: 2px; }
@@ -176,14 +180,6 @@
   .detail-body .ok { color: var(--lcd-0); }
   .link-line { font-family: var(--font-pixel); font-size: 8px; line-height: 2; }
   .bd-help { margin-top: auto; font-family: var(--font-pixel); font-size: 7px; color: var(--lcd-1); }
-
-  /* HP / status bar */
-  .status { display: flex; align-items: center; gap: 8px; margin-top: 6px; position: relative; z-index: 5; }
-  .status .hp-label { font-family: var(--font-pixel); font-size: 7px; color: var(--lcd-1); }
-  .hp-bar { display: flex; gap: 2px; }
-  .hp-bar div { width: 9px; height: 7px; background: var(--lcd-0); transition: background .2s; }
-  .hp-bar div.empty { background: transparent; border: 1px solid var(--lcd-2); }
-  .crumb { margin-left: auto; font-family: var(--font-pixel); font-size: 7px; color: var(--lcd-1); }
 
   /* ---- controls ---- */
   .controls {
@@ -255,7 +251,6 @@
 
   @media (hover:hover) and (pointer:fine) {
     .dpad:hover .hint-up, .dpad:hover .hint-down, .dpad:hover .hint-left, .dpad:hover .hint-right { opacity: .5; }
-    .crumb a:hover { text-decoration: underline; }
   }
   @media (max-width: 440px) {
     .screen-bezel::before { font-size: 6.5px; letter-spacing: 0; }
@@ -277,6 +272,8 @@
           <pre class="ascii" id="avatar"></pre>
           <div class="title-title">MOHETUZZAMAN<br>MOBIN</div>
           <div class="title-sub">SW ENGINEER // AI AGENT // BASSIST</div>
+          <div class="title-tag">I BUILD SOFTWARE WITH AI AGENTS &amp; MAKE</div>
+          <div class="title-tag">LOUD NOISES WITH 4 STRINGS</div>
           <div class="press-start blink">PRESS START</div>
         </div>
       </div>
@@ -296,12 +293,6 @@
         <div class="detail" id="det-body"></div>
       </div>
 
-      <!-- shared status bar pinned to every screen -->
-      <div class="status" id="status-bar">
-        <span class="hp-label">PWR</span>
-        <div class="hp-bar" id="hp"></div>
-        <span class="crumb" id="crumb">TITLE</span>
-      </div>
     </div>
   </div>
 
@@ -329,19 +320,18 @@
 <div class="legend">
   <b>D-PAD</b> move &nbsp;·&nbsp; <b>A</b> select/enter <kbd>Z</kbd> <kbd>↵</kbd><br>
   <b>B</b> back <kbd>X</kbd> &nbsp;·&nbsp; <b>START</b> boot/menu <kbd>Enter</kbd> &nbsp;·&nbsp; <b>SELECT</b> home <kbd>Shift</kbd><br>
-  <b>M</b> sound on/off &nbsp;·&nbsp; a Game Boy DMG lowers your HP with 8-bit chirps
+  <b>M</b> sound on/off &nbsp;·&nbsp; a Game Boy DMG with 8-bit chirps under the hood
 </div>
 
 <footer>
-  © <span id="year"></span> Mohetuzzaman Mobin · a Game Boy DMG lowers your HP. Use arrows / on-screen buttons.
+  © <span id="year"></span> Mohetuzzaman Mobin · a Game Boy DMG. Use arrows / on-screen buttons.
 </footer>
 
 <script>
 /* ------------------------------------------------------------------ *
  *  Data tree — exactly the requested structure.
  * ------------------------------------------------------------------ */
-const AVATAR = /*ASCII*/`
-                 #%%%%%#
+const AVATAR = /*ASCII*/`                #%%%%%#
              #%%%%%%%%%%%%%#
            #%%%%%%%%%%%%%%%%%#
          #                     #
@@ -430,7 +420,6 @@ const scr = {
   items:  $("scr-items"),
   detail: $("scr-detail"),
 };
-const HP_MAX = 6;
 
 /* ------------------------------------------------------------------ *
  *  Console state
@@ -440,31 +429,17 @@ const S = {
   menuIdx: 0,             // selected heading in main menu
   itemIdx: 0,             // selected item in current section
   cat: null,              // current SITE.menu entry
-  hp: HP_MAX,
   on: true,
   lock: false,
 };
 
-function setHp(n){ S.hp = Math.max(0, Math.min(HP_MAX, n)); paintHp(); }
-function paintHp(){
-  const hp = $("hp"); hp.innerHTML = "";
-  for (let i=0;i<HP_MAX;i++){
-    const d = document.createElement("div");
-    if (i < S.hp) d.className = "";
-    else d.className = "empty";
-    hp.appendChild(d);
-  }
-}
-
 /* ------------------------------------------------------------------ *
  *  Screen switching
  * ------------------------------------------------------------------ */
-const crumbs = { title:"TITLE", menu:"MENU", items:"GAME", detail:"DATA" };
 function show(screen){
   Object.values(scr).forEach(s=>s.classList.add("hidden"));
   scr[screen].classList.remove("hidden");
   S.screen = screen;
-  $("crumb").textContent = crumbs[screen];
 }
 function renderScreen(){
   if (!S.on){ lcd.classList.add("screen-off"); return; }
@@ -474,7 +449,6 @@ function renderScreen(){
   else if (S.screen==="items") renderItems();
   else if (S.screen==="detail") renderDetail();
   else renderTitle();
-  setHp(S.hp);
 }
 
 /* --- title --- */
@@ -482,7 +456,7 @@ function renderTitle(){
   $("avatar").textContent = AVATAR;
 }
 function titleStart(){
-  S.on = true; S.hp = HP_MAX; S.menuIdx = 0; S.cat = null;
+  S.on = true; S.menuIdx = 0; S.cat = null;
   renderScreen();
 }
 
@@ -545,7 +519,7 @@ function itemsMove(d){
 }
 function openItem(){
   const it = S.cat.items[S.itemIdx];
-  if (it.href){ window.open(it.href, it.target || "_self"); return; }
+  if (it.href){ window.open(it.href, it.target || "_self", "noopener"); return; }
   show("detail"); renderDetail();
 }
 
@@ -651,7 +625,7 @@ function press(btn){
   else if (btn === "A"){ beep(); }
   else if (btn === "UP" || btn === "DOWN" || btn === "LEFT" || btn === "RIGHT"){ beat(); }
   if (cur === "title"){
-    if (btn==="A" || btn==="START"){ S.on=true; S.menuIdx=0; S.hp=HP_MAX; show("menu"); renderMenu(); }
+    if (btn==="A" || btn==="START"){ S.on=true; S.menuIdx=0; show("menu"); renderMenu(); }
     return;
   }
   if (btn === "START"){ show("menu"); renderMenu(); return; }
@@ -714,9 +688,7 @@ document.addEventListener("keydown", e=>{
  *  Boot
  * ------------------------------------------------------------------ */
 $("year").textContent = new Date().getFullYear();
-paintHp();
 renderTitle();
-setHp(HP_MAX);
 </script>
 </body>
 </html>
