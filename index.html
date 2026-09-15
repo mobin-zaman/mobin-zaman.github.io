@@ -140,6 +140,7 @@
   .title-title { font-family: var(--font-pixel); font-size: 12px; letter-spacing: 1px; text-align: center; }
   .title-sub { font-family: var(--font-pixel); font-size: 7px; color: var(--lcd-1); letter-spacing: .5px; text-align: center; }
   .title-tag { font-family: var(--font-pixel); font-size: 7px; color: var(--lcd-1); letter-spacing: 1px; text-align: center; }
+  .title-sub + .title-tag { margin-top: 10px; }
   .blink { animation: t-blink 1s steps(1) infinite; }
   @keyframes t-blink { 50% { opacity: 0; } }
   .press-start { font-family: var(--font-pixel); font-size: 8px; margin-top: 14px; }
@@ -233,7 +234,7 @@
   .logo-bar {
     font-family: serif; font-style: italic; font-weight: bold;
     color: var(--shell-shadow); font-size: 14px; text-align: center;
-    letter-spacing: -1px; margin-top: 12px;
+    letter-spacing: -1px; margin-top: 34px;
   }
   .logo-bar span { letter-spacing: 6px; font-family: var(--font-pixel); font-size: 9px; font-style: normal; font-weight: normal; display: inline-block; }
 
@@ -315,9 +316,9 @@
 </div>
 
 <div class="legend">
-  <b>D-PAD</b> move &nbsp;·&nbsp; <b>A</b> select/enter <kbd>Z</kbd> <kbd>↵</kbd><br>
-  <b>B</b> back <kbd>X</kbd> &nbsp;·&nbsp; <b>START</b> boot/menu <kbd>Enter</kbd> &nbsp;·&nbsp; <b>SELECT</b> home <kbd>Shift</kbd><br>
-  <b>M</b> sound on/off &nbsp;·&nbsp; a Game Boy DMG with 8-bit chirps under the hood
+  <b>D-PAD</b>/arrows move &nbsp;·&nbsp; <b>A</b> select/enter <kbd>Z</kbd> <kbd>↵</kbd><br>
+  <b>B</b> back <kbd>X</kbd> &nbsp;·&nbsp; <b>SELECT</b> home <kbd>Shift</kbd> &nbsp;·&nbsp; <b>START</b> open menu<br>
+  <b>M</b> sound on/off — tune in with 8-bit chirps under the hood
 </div>
 
 <footer>
@@ -614,7 +615,7 @@ function press(btn){
 function goBack(){
   if (S.screen === "items"){ show("menu"); renderMenu(); }
   else if (S.screen === "detail"){ show("items"); renderItems(); }
-  else if (S.screen === "menu"){ show("title"); renderTitle(); }
+  else if (S.screen === "menu"){ beepBack(); show("title"); renderTitle(); }
 }
 /* --- button press flash (A/B get a pressed inset) --- */
 const flashId = { A:"btn-a", B:"btn-b" };
