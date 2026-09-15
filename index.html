@@ -65,6 +65,15 @@ body {
 @keyframes band { to { transform: translateY(calc(100vh + 130px)); } }
 
 .in { position: relative; z-index: 6; }
+.avatar {
+  display: block;
+  margin: 0 auto 1.1rem;
+  width: 64px; height: 64px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #20291d;
+  box-shadow: 0 0 12px rgba(183,224,127,0.25), inset 0 0 8px rgba(0,0,0,0.6);
+}
 a { color: var(--cyan); text-decoration: none; transition: color .2s; }
 @media (hover:hover) and (pointer:fine) { a:hover { color: var(--amber); text-decoration: underline; } }
 
@@ -98,6 +107,7 @@ footer { margin-top: 2.6rem; font-size: .5rem; color: var(--ink-dim); text-align
   <div class="in">
 
     <header>
+      <img class="avatar" src="assets/profile.jpg" alt="Mohetuzzaman Mobin — chalk self-portrait" width="64" height="64" />
       <h1>Mohetuzzaman Mobin</h1>
       <p class="tagline">software engineer / AI agent consultant / bassist</p>
       <p class="blurb">I build software using AI agents and occasionally make unnecessarily loud noises with four strings.</p>
