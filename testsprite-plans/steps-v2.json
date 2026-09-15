@@ -1,9 +1,0 @@
-[
-  { "type": "action", "description": "Navigate to the homepage https://mobin-zaman.github.io/" },
-  { "type": "assertion", "description": "The hero headline displays the text 'Mohetuzzaman Mobin'" },
-  { "type": "assertion", "description": "A section headed 'What I do' is visible, with a list item for 'Web development' and a list item for 'AI agents'" },
-  { "type": "assertion", "description": "A section headed 'The bands' is visible and mentions both 'Shohojia' and 'Urban Genesis'" },
-  { "type": "assertion", "description": "In the bands section, the link labeled 'Shohojia' points to the URL https://www.facebook.com/shohojia/" },
-  { "type": "assertion", "description": "A 'Contact' section is visible listing an email address, a GitHub link, and a GitLab link" },
-  { "type": "assertion", "description": "The page content fits without horizontal scrolling on a standard desktop viewport" }
-]

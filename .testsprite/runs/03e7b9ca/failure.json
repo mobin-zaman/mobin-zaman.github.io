@@ -1,9 +1,0 @@
-{
-  "rootCauseHypothesis": "The hosting side is likely serving a page that does not match the test’s expected DOM, either because the content failed to load/render or because the deployed layout changed. Since the locator was not found at all, the most probable causes are: the section/list is missing in the live build, the menu data is empty or unavailable, or a different page/error page is being served under the tested URL. Underlying error: Locator expected to have text 'Shohojia'\nActual value: <element(s) not found> \nCall log:\n  - LocatorAssertions.to_have_text with timeout 15000ms\n  -   - waiting for locator(\"xpath=/html/body/main/section[1]/div/div[3]/ul/li[1]/a\").first",
-  "recommendedFixTarget": {
-    "kind": "selector",
-    "reference": "[1]",
-    "rationale": "Check the deployed page structure and ensure the expected navigation item is rendered at /html/body/main/section[1]/div/div[3]/ul/li[1]/a with text 'Shohojia'. If the markup changed, restore the original DOM order/classes or update the template so the first list item in that section exists and is populated. Also verify the service is serving the correct production build/content (not an empty, error, or maintenance page), and that any CMS/API data source feeding this menu is available and returning the expected item."
-  },
-  "evidence": []
-}
