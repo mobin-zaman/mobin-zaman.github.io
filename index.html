@@ -181,6 +181,11 @@
   .link-line { font-family: var(--font-pixel); font-size: 8px; line-height: 2; }
   .bd-help { margin-top: auto; font-family: var(--font-pixel); font-size: 7px; color: var(--lcd-1); }
 
+  /* games (one canvas, drawn in the 4 LCD shades) */
+  .game-body { flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; }
+  #game-canvas { width: 100%; height: auto; max-height: 100%; image-rendering: pixelated; background: var(--lcd-3); box-shadow: inset 0 0 0 2px var(--lcd-2); }
+  .game-help { font-family: var(--font-pixel); font-size: 7px; color: var(--lcd-1); text-align: center; line-height: 1.8; white-space: nowrap; }
+
   /* ---- controls ---- */
   .controls {
     display: grid;
@@ -293,11 +298,19 @@
         <div class="detail" id="det-body"></div>
       </div>
 
+      <div class="screen hidden" id="scr-game">
+        <h2><span id="game-title">GAME</span> <span class="ink" id="game-status"></span></h2>
+        <div class="game-body">
+          <canvas id="game-canvas" width="96" height="84" aria-label="Game screen"></canvas>
+          <div class="game-help" id="game-help"></div>
+        </div>
+      </div>
+
     </div>
   </div>
 
   <div class="controls">
-    <div class="dpad" id="dpad">
+    <div class="dpad" id="dpad" role="group" aria-label="D-pad: up, down, left, right">
       <span class="hint-up">▲</span>
       <span class="hint-down">▼</span>
       <span class="hint-left">◀</span>
@@ -310,8 +323,8 @@
       <button class="ab" id="btn-a" aria-label="A (select)">A</button>
     </div>
     <div class="start-select">
-      <div class="ss-btn-wrap" id="btn-select"><div class="ss-btn"></div><div class="ss-label">SELECT</div></div>
-      <div class="ss-btn-wrap" id="btn-start"><div class="ss-btn"></div><div class="ss-label">START</div></div>
+      <div class="ss-btn-wrap" id="btn-select" role="button" tabindex="0" aria-label="SELECT (home)"><div class="ss-btn"></div><div class="ss-label">SELECT</div></div>
+      <div class="ss-btn-wrap" id="btn-start" role="button" tabindex="0" aria-label="START (menu)"><div class="ss-btn"></div><div class="ss-label">START</div></div>
     </div>
   </div>
   <div class="logo-bar">Nintendo <span>GAME BOY</span>™</div>
@@ -320,7 +333,8 @@
 <div class="legend">
   <b>D-PAD</b>/arrows move &nbsp;·&nbsp; <b>A</b> select/enter <kbd>Z</kbd> <kbd>↵</kbd><br>
   <b>B</b> back <kbd>X</kbd> &nbsp;·&nbsp; <b>SELECT</b> home <kbd>Shift</kbd> &nbsp;·&nbsp; <b>START</b> open menu<br>
-  <b>M</b> sound on/off — tune in with 8-bit chirps under the hood
+  <b>M</b> sound on/off — tune in with 8-bit chirps under the hood<br>
+  <b>Games</b> — D-PAD to play, <b>A</b> pause/serve, <b>B</b> quit; best score saved on the cart
 </div>
 
 <footer>
@@ -371,6 +385,11 @@ const SITE = {
                    "The other project",
                    "Ask for the setlist"] }
     ]},
+    { key: "games", title: "Games", note: "PLAY", items: [
+        { name: "Snake",   game: "snake" },
+        { name: "Pong",    game: "pong" },
+        { name: "Simon",   game: "simon" }
+    ]},
     { key: "contact", title: "Contact", note: "LINKS", items: [
         { name: "Email",      href: "mailto:mohetuzzamanmobin@gmail.com",      label: "mohetuzzamanmobin@gmail.com" },
         { name: "GitHub",     href: "https://github.com/mobin-zaman",           label: "github.com/mobin-zaman",
@@ -391,13 +410,14 @@ const scr = {
   menu:   $("scr-menu"),
   items:  $("scr-items"),
   detail: $("scr-detail"),
+  game:   $("scr-game"),
 };
 
 /* ------------------------------------------------------------------ *
  *  Console state
  * ------------------------------------------------------------------ */
 const S = {
-  screen: "title",        // title | menu | items | detail
+  screen: "title",        // title | menu | items | detail | game
   menuIdx: 0,             // selected heading in main menu
   itemIdx: 0,             // selected item in current section
   cat: null,              // current SITE.menu entry
@@ -416,6 +436,7 @@ function show(screen){
   if (screen !== "title"){ blip(); }
   // every screen change glitches (scanline sweep + entrance)
   glitch(screen);
+  if (screen !== "game") stopGame();
 }
 function glitch(screen){
   const l = $("lcd");
@@ -505,6 +526,7 @@ function itemsMove(d){
 function openItem(){
   const it = S.cat.items[S.itemIdx];
   if (it.href){ beepHigh(); window.open(it.href, it.target || "_self", "noopener"); return; }
+  if (it.game){ startGame(it.game); return; }
   show("detail"); renderDetail();
 }
 
@@ -599,7 +621,7 @@ function press(btn){
   flash(btn);
   const cur = S.screen;
   // sound per action — navigation chirps fire in show()/openItem()
-  if (cur === "title" && (btn==="A" || btn==="START")){ jingle(); bootAnim(); }
+  if (cur === "title" && (btn==="A" || btn==="START")){ jingle(); }
   else if (btn === "SELECT"){ beepBack(); }
   else if (btn === "UP" || btn === "DOWN" || btn === "LEFT" || btn === "RIGHT"){ beat(); }
   if (cur === "title"){
@@ -608,24 +630,33 @@ function press(btn){
   }
   if (btn === "START"){ show("menu"); renderMenu(); return; }
   if (btn === "SELECT"){ show("title"); renderTitle(); return; }
-  if (btn === "UP"){ if(cur==="menu") menuMove(-1); else if(cur==="items") itemsMove(-1); return; }
-  if (btn === "DOWN"){ if(cur==="menu") menuMove(1); else if(cur==="items") itemsMove(1); return; }
-  if (btn === "LEFT"){ goBack(); return; }
-  if (btn === "RIGHT"){ if(cur==="menu") enterMenu(); else if(cur==="items") openItem(); else if(cur==="detail") detailNext(); return; }
+  if (btn === "UP"){ if(cur==="menu") menuMove(-1); else if(cur==="items") itemsMove(-1); else if(cur==="game") gameInput("UP"); return; }
+  if (btn === "DOWN"){ if(cur==="menu") menuMove(1); else if(cur==="items") itemsMove(1); else if(cur==="game") gameInput("DOWN"); return; }
+  if (btn === "LEFT"){ if(cur==="game") gameInput("LEFT"); else goBack(); return; }
+  if (btn === "RIGHT"){ if(cur==="menu") enterMenu(); else if(cur==="items") openItem(); else if(cur==="detail") detailNext(); else if(cur==="game") gameInput("RIGHT"); return; }
   if (btn === "A"){
-    if (cur==="menu") enterMenu();
-    else if (cur==="items") openItem();
-    else if (cur==="detail") detailNext();
-    else if (cur==="title") titleStart();
+    if(cur==="menu") enterMenu();
+    else if(cur==="items") openItem();
+    else if(cur==="detail") detailNext();
+    else if(cur==="game") gameInput("A");
+    else if(cur==="title") titleStart();
     return;
   }
-  if (btn === "B"){ goBack(); return; }
+  if (btn === "B"){ if(cur==="game") gameInput("B"); else goBack(); return; }
 }
 function goBack(){
   if (S.screen === "items"){ show("menu"); renderMenu(); }
   else if (S.screen === "detail"){ show("items"); renderItems(); }
   else if (S.screen === "menu"){ beepBack(); show("title"); renderTitle(); }
 }
+/* --- shared input-hold state: lets a held D-pad glide a paddle --- */
+const hold = { dir: null };
+function setHold(btn){
+  hold.dir = (btn === "UP" || btn === "DOWN" || btn === "LEFT" || btn === "RIGHT") ? btn : null;
+}
+// auto-release: a stuck "held" key would freeze a paddle if focus is lost
+setInterval(()=>{ hold.dir = null; }, 400);   // ponytail: poll clear, not per-key tracking
+
 /* --- button press flash (A/B get a pressed inset) --- */
 const flashId = { A:"btn-a", B:"btn-b" };
 function flash(btn){
@@ -659,8 +690,347 @@ const KEYS = {
 };
 document.addEventListener("keydown", e=>{
   if (e.key === "m" || e.key === "M"){ toggleSound(); return; }
-  if (KEYS[e.key] !== undefined){ e.preventDefault(); press(KEYS[e.key]); }
+  if (KEYS[e.key] !== undefined){
+    e.preventDefault();
+    if (e.repeat) return;          // OS key-repeat must not stack presses
+    setHold(KEYS[e.key]);
+    press(KEYS[e.key]);
+  }
 });
+document.addEventListener("keyup", e=>{
+  if (KEYS[e.key] !== undefined) hold.dir = null;
+});
+// pointer-held D-pad: press-and-hold glides the paddle (pointer events only;
+// click still fires on a quick tap, so a tap still moves once as before)
+["pointerdown"].forEach(evt => document.addEventListener(evt, e=>{
+  const t = e.target.closest("#dpad, #dpad-h, #dpad-v");
+  if (!t) return;
+  const r = $("dpad").getBoundingClientRect();
+  const dx = e.clientX - (r.left + r.width/2);
+  const dy = e.clientY - (r.top + r.height/2);
+  setHold(Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? "LEFT" : "RIGHT") : (dy < 0 ? "UP" : "DOWN"));
+}));
+["pointerup", "pointercancel", "pointerleave"].forEach(evt => document.addEventListener(evt, e=>{
+  if (e.target.closest && e.target.closest("#dpad, #dpad-h, #dpad-v")) hold.dir = null;
+}));
+
+/* ------------------------------------------------------------------ *
+ *  Games — SNAKE / PONG / SIMON. One canvas, one rAF loop, 4 LCD shades.
+ *  Input via gameInput(btn), same dispatcher as the rest of the site.
+ * ------------------------------------------------------------------ */
+const G = {           // active game state
+  name: null, mode: "idle",      // idle | countdown | playing | over | simonShow
+  raf: null, last: 0, acc: 0,
+  snake: null, pong: null, simon: null,
+  cv: () => $("game-canvas"),
+};
+const LCD_SHADES = ["#0f380f","#306230","#8bac0f","#9bbc0f"];
+const ctx = () => G.cv().getContext("2d");
+
+function bestKey(name){ return "mobin-best-" + name; }
+function getBest(name){
+  const v = parseInt((localStorage.getItem(bestKey(name)) || "0"), 10);
+  return isNaN(v) ? 0 : v;
+}
+function setBest(name, score){
+  if (score > getBest(name)){ localStorage.setItem(bestKey(name), String(score)); return true; }
+  return false;
+}
+
+/* --- shared helpers --- */
+function px(x, y, shade){                 // one LCD "pixel" = 4x4 canvas cells
+  const c = ctx(); c.fillStyle = LCD_SHADES[shade];
+  c.fillRect(x*4, y*4, 4, 4);
+}
+function clearLcd(){
+  const c = ctx(); c.fillStyle = LCD_SHADES[3];
+  c.fillRect(0, 0, G.cv().width, G.cv().height);
+}
+function paintText(txt, x, y, shade){
+  const c = ctx();
+  c.fillStyle = LCD_SHADES[shade];
+  c.font = "8px 'Press Start 2P', monospace";
+  c.textBaseline = "top";
+  c.fillText(txt, x, y);
+}
+function status(txt){ $("game-status").textContent = txt; }
+function help(txt){ $("game-help").textContent = txt; }
+
+/* --- lifecycle --- */
+const GAMES = {};       // name -> { title, init, step, draw, input, help }
+function startGame(name){
+  const g = GAMES[name];
+  if (!g) return;
+  stopGame();
+  G.name = name; G.mode = "idle";
+  $("game-title").textContent = g.title.toUpperCase();
+  show("game");
+  resumeAudio();
+  g.init();
+  runLoop();
+}
+function renderGame(){ if (G.name) GAMES[G.name].init(); }   // re-enter after SELECT/START
+function stopGame(){
+  if (G.raf){ cancelAnimationFrame(G.raf); G.raf = null; }
+  G.name = null; G.mode = "idle";
+}
+function runLoop(){ G.last = performance.now(); G.acc = 0; G.raf = requestAnimationFrame(loop); }
+function loop(now){
+  if (!G.name) return;
+  const dt = Math.min(now - G.last, 250);
+  G.last = now;
+  const g = GAMES[G.name];
+  // fixed-timestep: each game's step() no-ops in paused/over states itself
+  G.acc += dt; const step = 1000 / g.tps;
+  let guard = 0;
+  while (G.acc >= step && guard++ < 8){ G.acc -= step; g.step(); }
+  g.draw();
+  if (G.name) G.raf = requestAnimationFrame(loop);
+}
+function gameInput(btn){
+  if (!G.name) return;
+  if (btn === "B"){ beepBack(); show("items"); renderItems(); return; }   // quit -> back
+  GAMES[G.name].input(btn);
+}
+
+/* ================================================================ SNAKE
+ * grid 24x18, snake grows on food, speeds up every 5 eaten. */
+GAMES.snake = {
+  title: "Snake", tps: 8,
+  init(){
+    const mid = 9;
+    this.snake = [{x:8,y:mid},{x:7,y:mid},{x:6,y:mid}];
+    this.dir = {x:1,y:0}; this.nextDir = {x:1,y:0};
+    this.food = {x:16,y:mid}; this.score = 0; this.eaten = 0;
+    G.mode = "countdown"; this.cd = 3; this.cdAcc = 0;
+    status(""); help("D-PAD MOVE · A PAUSE · B QUIT");
+  },
+  input(btn){
+    if (btn === "A"){ if (G.mode==="playing"){ G.mode="idle"; status("PAUSED"); beepBack(); } else if (G.mode!=="countdown"){ G.mode="playing"; status(""); blip(); } return; }
+    if (G.mode !== "playing" && G.mode !== "countdown") return;
+    const d = {UP:{x:0,y:-1}, DOWN:{x:0,y:1}, LEFT:{x:-1,y:0}, RIGHT:{x:1,y:0}}[btn];
+    if (!d) return;
+    if (d.x === -this.dir.x && d.y === -this.dir.y) return;   // no 180°
+    this.nextDir = d;
+  },
+  step(){
+    if (G.mode !== "countdown" && G.mode !== "playing") return;   // idle=paused, over=frozen
+    if (G.mode === "countdown"){ this.cdAcc += 1000/this.tps;
+      if (this.cdAcc >= 1000){ this.cdAcc = 0; this.cd--;
+        if (this.cd <= 0){ G.mode = "playing"; } blip(); } return; }
+    this.dir = this.nextDir;
+    const head = { x: this.snake[0].x + this.dir.x, y: this.snake[0].y + this.dir.y };
+    // wrap-around walls (Game Boy Snake style)
+    head.x = (head.x + 24) % 24; head.y = (head.y + 18) % 18;
+    if (this.snake.some(s => s.x === head.x && s.y === head.y)){
+      G.mode = "over"; const b = setBest("snake", this.score);
+      status("GAME OVER " + (b ? "· NEW BEST!" : "· BEST " + getBest("snake")));
+      help("A RESTART · B QUIT"); beepBack(); return;
+    }
+    this.snake.unshift(head);
+    if (head.x === this.food.x && head.y === this.food.y){
+      this.score++; this.eaten++;
+      if (this.eaten % 5 === 0 && this.tps < 16) this.tps++;
+      this.placeFood(); beepHigh();
+    } else this.snake.pop();
+    if (G.mode === "playing") status("SCORE " + this.score + " · BEST " + getBest("snake"));
+  },
+  placeFood(){
+    let f;
+    do { f = { x: Math.floor(Math.random()*24), y: Math.floor(Math.random()*18) }; }
+    while (this.snake.some(s => s.x === f.x && s.y === f.y));
+    this.food = f;
+  },
+  draw(){
+    clearLcd();
+    if (G.mode === "countdown"){ paintText("READY " + Math.max(this.cd,1), 8, 34, 0); return; }
+    this.snake.forEach((s,i) => px(s.x, s.y, i===0 ? 0 : 1));
+    px(this.food.x, this.food.y, 0);
+    if (G.mode === "over"){
+      const c = ctx(); c.fillStyle = LCD_SHADES[3];
+      c.fillRect(8, 26, 80, 30);
+      paintText("GAME OVER", 14, 32, 0);
+      paintText("SCORE " + this.score, 14, 44, 1);
+    }
+  }
+};
+
+/* ================================================================ PONG
+ * you (left) vs CPU (right), first to 7 wins. D-PAD up/down, A serves. */
+GAMES.pong = {
+  title: "Pong", tps: 60,
+  init(){
+    this.py = 14; this.cy = 14; this.ball = null;
+    this.ps = 0; this.cs = 0; this.serveL = true;
+    G.mode = "idle"; this.serveTimer = 0;
+    status("FIRST TO 7"); help("D-PAD UP/DOWN · A SERVE · B QUIT");
+  },
+  input(btn){
+    if (btn === "A"){ if (!this.ball && G.mode !== "over"){ this.serve(); blip(); } return; }
+    if (G.mode !== "playing") return;
+    if (btn === "UP"){ this.py = Math.max(0, this.py - 3); }
+    if (btn === "DOWN"){ this.py = Math.min(28, this.py + 3); }
+  },
+  serve(){
+    this.ball = { x: 44, y: 21, vx: this.serveL ? -0.7 : 0.7, vy: (Math.random() > 0.5 ? 1 : -1) * 0.45 };
+    G.mode = "playing";
+    status("YOU " + this.ps + " · CPU " + this.cs);
+  },
+  step(){
+    // invariant: playing always implies a live ball (self-heals a stray state)
+    if (G.mode === "playing" && !this.ball) G.mode = "idle";
+    if (G.mode === "playing"){
+      // held D-pad / arrow: smooth paddle glide while the button stays down
+      if (hold.dir === "UP")   this.py = Math.max(0, this.py - 0.55);
+      if (hold.dir === "DOWN") this.py = Math.min(28, this.py + 0.55);
+      const b = this.ball, W = 96, H = 84;
+      b.x += b.vx; b.y += b.vy;
+      if (b.y <= 1 || b.y >= H - 5){ b.vy = -b.vy; b.y = Math.max(1, Math.min(H-5, b.y)); blip(); }
+      // player paddle: x=2..6, y = py*2.5 (paddle 16 tall)
+      const pTop = this.py * 2.5;
+      if (b.vx < 0 && b.x <= 7 && b.x >= 2 && b.y + 3 >= pTop && b.y <= pTop + 16){
+        b.vx = Math.abs(b.vx) + 0.05;
+        b.vy = ((b.y - (pTop + 8)) / 8) * 0.9; beepHigh();
+      }
+      const cTop = this.cy * 2.5;
+      if (b.vx > 0 && b.x >= W - 8 && b.x <= W - 3 && b.y + 3 >= cTop && b.y <= cTop + 16){
+        b.vx = -(Math.abs(b.vx) + 0.05);
+        b.vy = ((b.y - (cTop + 8)) / 8) * 0.9; blip();
+      }
+      if (b.x < -4){ this.cs++; this.ball = null; this.serveL = false; this.point(); }
+      else if (b.x > W + 4){ this.ps++; this.ball = null; this.serveL = true; this.point(); }
+      // CPU: chase, capped at ~2/3 of the ball's intercept speed
+      const target = b.y / 2.5 - 8;
+      this.cy += Math.max(-0.5, Math.min(0.5, (target - this.cy) * 0.065));
+      this.cy = Math.max(0, Math.min(28, this.cy));
+    } else if (!this.ball && G.mode !== "over"){
+      this.serveTimer++;
+      if (this.serveTimer > 90){ this.serveTimer = 0; this.serve(); }   // auto-serve
+    }
+  },
+  point(){
+    if (this.ps >= 7 || this.cs >= 7){
+      G.mode = "over";
+      const win = this.ps >= 7;
+      const b = win && setBest("pong", this.ps - this.cs);
+      status(win ? "YOU WIN!" : "CPU WINS");
+      help((win ? (b ? "NEW BEST +" + (this.ps - this.cs) : "BEST +" + getBest("pong")) : "A REMATCH · B QUIT"));
+      if (win) jingle(); else beepBack();
+    } else {
+      G.mode = "idle"; this.serveTimer = 0;
+      status("YOU " + this.ps + " · CPU " + this.cs);
+      help("A SERVE · B QUIT");
+    }
+  },
+  draw(){
+    clearLcd();
+    const c = ctx();
+    // dashed centre net
+    c.fillStyle = LCD_SHADES[1];
+    for (let y = 4; y < 84; y += 8) c.fillRect(46, y, 4, 4);
+    // paddles (paddle = 4x16)
+    c.fillStyle = LCD_SHADES[0];
+    c.fillRect(3, this.py * 2.5, 4, 16);
+    c.fillRect(89, this.cy * 2.5, 4, 16);
+    if (this.ball) { c.fillStyle = LCD_SHADES[0]; c.fillRect(this.ball.x, this.ball.y, 4, 4); }
+    if (G.mode === "over"){
+      c.fillStyle = LCD_SHADES[3]; c.fillRect(10, 30, 76, 24);
+      paintText(this.ps >= 7 ? "YOU WIN!" : "CPU WINS", 16, 36, 0);
+      paintText("A REMATCH", 16, 46, 1);
+    }
+  }
+};
+
+/* ================================================================ SIMON
+ * repeat the growing tone+pad sequence. 4 pads mapped to the D-pad. */
+GAMES.simon = {
+  title: "Simon", tps: 8,
+  init(){
+    this.seq = []; this.inputCount = 0; this.score = 0;
+    this.flash = null; this.flashTimer = 0;
+    G.mode = "idle";
+    status("A START"); help("WATCH · REPEAT WITH D-PAD · B QUIT");
+  },
+  pads: [
+    { btn:"UP",    x:2,  y:2,  shade:1, freq:440 },
+    { btn:"RIGHT", x:1,  y:1,  shade:0, freq:587 },
+    { btn:"DOWN",  x:2,  y:2,  shade:1, freq:330 },
+    { btn:"LEFT",   x:1,  y:1,  shade:0, freq:523 }
+  ],
+  input(btn){
+    if (btn === "A"){ if (G.mode === "idle" || G.mode === "over"){
+      if (G.mode === "over") this.seq = [];              // fresh run after a loss
+      this.roundStart(); } return; }
+    if (G.mode !== "playing") return;
+    const idx = this.pads.findIndex(p => p.btn === btn);
+    if (idx < 0) return;
+    this.flashPad(idx);
+    const expected = this.seq[this.inputCount];
+    if (idx === expected){
+      this.inputCount++;
+      if (this.inputCount >= this.seq.length){        // round clear
+        this.score = this.seq.length;
+        const b = setBest("simon", this.score);
+        status("ROUND CLEAR · " + (b ? "NEW BEST!" : "BEST " + getBest("simon")));
+        G.mode = "idle"; this.roundTimer = 0; beepHigh();
+      }
+    } else {                                            // wrong
+      G.mode = "over";
+      status("WRONG! · BEST " + getBest("simon"));
+      help("A RESTART · B QUIT"); beepBack();
+    }
+  },
+  roundStart(){
+    this.seq.push(Math.floor(Math.random()*4));
+    this.inputCount = 0;
+    G.mode = "simonShow"; this.showIdx = 0; this.showTimer = 0;
+    status("ROUND " + (this.seq.length) + " · WATCH");
+    blip();
+  },
+  flashPad(i){
+    const p = this.pads[i];
+    this.flash = i; this.flashTimer = 3;
+    tone(p.freq, 120, "square", 0.08, i % 2 ? 0.3 : -0.3);
+  },
+  step(){
+    if (this.flash && --this.flashTimer <= 0) this.flash = null;
+    if (G.mode === "simonShow"){
+      this.showTimer++;
+      if (this.showTimer >= 6){                        // ~0.75s per pad
+        this.showTimer = 0;
+        if (this.showIdx < this.seq.length){ this.flashPad(this.seq[this.showIdx++]); }
+        else { G.mode = "playing"; status("ROUND " + this.seq.length + " · YOUR TURN"); }
+      }
+    } else if (G.mode === "idle" && this.seq.length && this.roundTimer !== undefined){
+      if (++this.roundTimer > 24){ this.roundStart(); }   // brief beat after a clear round
+    }
+  },
+  draw(){
+    clearLcd();
+    const c = ctx();
+    // 4 quadrant pads; the lit one paints bright, others dim
+    const qw = 42, qh = 34;
+    c.fillStyle = LCD_SHADES[2]; c.fillRect(4, 4, qw, qh);   // UL = UP
+    c.fillStyle = LCD_SHADES[2]; c.fillRect(50, 4, qw, qh);  // UR = RIGHT
+    c.fillStyle = LCD_SHADES[2]; c.fillRect(4, 46, qw, qh);  // DL = DOWN
+    c.fillStyle = LCD_SHADES[2]; c.fillRect(50, 46, qw, qh); // DR = LEFT
+    if (this.flash !== null){
+      c.fillStyle = LCD_SHADES[0];
+      const ps = [[4,4],[50,4],[4,46],[50,46]];
+      c.fillRect(ps[this.flash][0], ps[this.flash][1], qw, qh);
+    }
+    c.fillStyle = LCD_SHADES[0];
+    c.fillRect(44, 38, 8, 8);                             // centre hub
+    paintText("U", 22, 18, this.flash===0 ? 3 : 0);
+    paintText("R", 66, 18, this.flash===1 ? 3 : 0);
+    paintText("D", 22, 60, this.flash===2 ? 3 : 0);
+    paintText("L", 66, 60, this.flash===3 ? 3 : 0);
+    if (G.mode === "over"){
+      c.fillStyle = LCD_SHADES[3]; c.fillRect(14, 32, 68, 20);
+      paintText("WRONG!", 24, 38, 0);
+    }
+  }
+};
 
 /* ------------------------------------------------------------------ *
  *  Boot
