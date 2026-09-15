@@ -126,7 +126,7 @@
   .lcd .sub { color: var(--lcd-1); }
 
   /* title */
-  .title-body { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 0; }
+  .title-body { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; min-height: 0; }
   img.avatar {
     width: 200px;
     height: 200px;
@@ -135,13 +135,14 @@
     image-rendering: pixelated;
     background: var(--lcd-2);
     box-shadow: inset 0 0 0 2px var(--lcd-1), 0 0 0 1px var(--lcd-2);
+    margin-bottom: 16px;
   }
-  .title-title { font-family: var(--font-pixel); font-size: 12px; letter-spacing: 1px; }
-  .title-sub { font-family: var(--font-pixel); font-size: 7px; color: var(--lcd-1); letter-spacing: .5px; }
-  .title-tag { font-family: var(--font-pixel); font-size: 7px; color: var(--lcd-1); letter-spacing: 1px; margin-top: 1px; }
+  .title-title { font-family: var(--font-pixel); font-size: 12px; letter-spacing: 1px; text-align: center; }
+  .title-sub { font-family: var(--font-pixel); font-size: 7px; color: var(--lcd-1); letter-spacing: .5px; text-align: center; }
+  .title-tag { font-family: var(--font-pixel); font-size: 7px; color: var(--lcd-1); letter-spacing: 1px; text-align: center; }
   .blink { animation: t-blink 1s steps(1) infinite; }
   @keyframes t-blink { 50% { opacity: 0; } }
-  .press-start { font-family: var(--font-pixel); font-size: 8px; margin-top: 2px; }
+  .press-start { font-family: var(--font-pixel); font-size: 8px; margin-top: 14px; }
 
   /* power-on boot: a scanline sweep reveals the screen */
   .lcd.booting::before {
@@ -264,7 +265,6 @@
   <div class="screen-bezel">
     <div class="lcd" id="lcd">
       <div class="screen" id="scr-title">
-        <h2>MOBIN BOY DMG</h2>
         <div class="title-body">
           <img class="avatar" id="avatar" src="assets/portrait-lcd.png" alt="Chalk portrait of Mohetuzzaman Mobin">
           <div class="title-title">MOHETUZZAMAN<br>MOBIN</div>
@@ -409,6 +409,8 @@ function show(screen){
   Object.values(scr).forEach(s=>s.classList.add("hidden"));
   scr[screen].classList.remove("hidden");
   S.screen = screen;
+  // every page change chirps — covers buttons, keys, AND direct row clicks
+  if (screen !== "title"){ blip(); }
 }
 function renderScreen(){
   if (!S.on){ lcd.classList.add("screen-off"); return; }
@@ -488,7 +490,7 @@ function itemsMove(d){
 }
 function openItem(){
   const it = S.cat.items[S.itemIdx];
-  if (it.href){ window.open(it.href, it.target || "_self", "noopener"); return; }
+  if (it.href){ beepHigh(); window.open(it.href, it.target || "_self", "noopener"); return; }
   show("detail"); renderDetail();
 }
 
@@ -551,10 +553,10 @@ function tone(freq, ms, type, vol, pan){
   g.connect(c.destination);
   o.start(t); o.stop(t + ms/1000 + 0.02);
 }
-function beep(){ tone(760, 65, "square", 0.08, 0); }
 function beepHigh(){ tone(1040, 70, "square", 0.08, 0.4); }
 function beepBack(){ tone(520, 70, "triangle", 0.09, -0.4); }
 function beat(){ tone(460, 40, "square", 0.045, 0); }
+function blip(){ tone(660, 55, "square", 0.07, 0); }
 function jingle(){ // boot fanfare: two stereo-spread arpeggio voices
   const notes = [[523,-0.3,0],[659,-0.15,0.11],[784,0.15,0.22],[1047,0.3,0.36]];
   notes.forEach(n=>{
@@ -586,12 +588,9 @@ function press(btn){
   if (S.lock) return;
   flash(btn);
   const cur = S.screen;
-  // sound per action
+  // sound per action — navigation chirps fire in show()/openItem()
   if (cur === "title" && (btn==="A" || btn==="START")){ jingle(); bootAnim(); }
-  else if (btn === "START"){ beepHigh(); }
   else if (btn === "SELECT"){ beepBack(); }
-  else if (btn === "B"){ beepBack(); }
-  else if (btn === "A"){ beep(); }
   else if (btn === "UP" || btn === "DOWN" || btn === "LEFT" || btn === "RIGHT"){ beat(); }
   if (cur === "title"){
     if (btn==="A" || btn==="START"){ S.on=true; S.menuIdx=0; show("menu"); renderMenu(); }
