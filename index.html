@@ -120,10 +120,8 @@
     text-shadow: 1px 1px 0 var(--lcd-2);
     line-height: 1.5;
   }
-  .lcd .pixel { font-family: var(--font-pixel); }
   .lcd .ink { color: var(--lcd-1); }
   .lcd .bright { color: var(--lcd-3); }
-  .lcd .sub { color: var(--lcd-1); }
 
   /* title */
   .title-body { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; min-height: 0; }
@@ -178,7 +176,6 @@
   .detail-name { font-family: var(--font-pixel); font-size: 10px; }
   .detail-body { font-family: var(--font-pixel); font-size: 8px; line-height: 2.1; color: var(--lcd-1); }
   .detail-body .ok { color: var(--lcd-0); }
-  .link-line { font-family: var(--font-pixel); font-size: 8px; line-height: 2; }
   .bd-help { margin-top: auto; font-family: var(--font-pixel); font-size: 7px; color: var(--lcd-1); }
 
   /* games (one canvas, drawn in the 4 LCD shades) */
@@ -448,23 +445,15 @@ function glitch(screen){
   }, 500);
 }
 function renderScreen(){
-  if (!S.on){ lcd.classList.add("screen-off"); return; }
   lcd.classList.remove("screen-off");
   show(S.screen);
   if (S.screen==="menu") renderMenu();
   else if (S.screen==="items") renderItems();
   else if (S.screen==="detail") renderDetail();
-  else renderTitle();
 }
 
 /* --- title --- */
-function renderTitle(){
-  // portrait is a static <img>; nothing to render
-}
-function titleStart(){
-  S.on = true; S.menuIdx = 0; S.cat = null;
-  renderScreen();
-}
+/* the title is a static <img> + text; nothing to render */
 
 /* --- menu (category list) --- */
 function renderMenu(){
@@ -503,7 +492,7 @@ function renderItems(){
     const row = document.createElement("div");
     row.className = "m-row" + (i===S.itemIdx ? " sel" : "");
     const label = it.href
-      ? `<a href="${it.href}" ${it.target?`target="${it.target}" rel="${it.rel}"`:""}>${it.label}</a>`
+      ? `<a href="${it.href}" ${it.target?`target="${it.target}" `:""}rel="noopener noreferrer">${it.label}</a>`
       : it.name;
     row.innerHTML = `<span class="caret">${i===S.itemIdx?"▸":" "}</span>`+
                     `<span class="m-label">${label}</span>`+
@@ -607,7 +596,7 @@ function toggleSound(){
   if (soundOn){ resumeAudio(); beepHigh(); }
   return soundOn;
 }
-function bootAnim(){ jingle(); }
+function bootAnim(){ jingle(); }   // site power-on: called once at load, below
 // unlock audio + mark booted on first interaction
 ["keydown","click","pointerdown"].forEach(evt => document.addEventListener(evt, ()=>{
   if (!booted){ booted = true; resumeAudio(); }
@@ -629,7 +618,7 @@ function press(btn){
     return;
   }
   if (btn === "START"){ show("menu"); renderMenu(); return; }
-  if (btn === "SELECT"){ show("title"); renderTitle(); return; }
+  if (btn === "SELECT"){ show("title"); return; }
   if (btn === "UP"){ if(cur==="menu") menuMove(-1); else if(cur==="items") itemsMove(-1); else if(cur==="game") gameInput("UP"); return; }
   if (btn === "DOWN"){ if(cur==="menu") menuMove(1); else if(cur==="items") itemsMove(1); else if(cur==="game") gameInput("DOWN"); return; }
   if (btn === "LEFT"){ if(cur==="game") gameInput("LEFT"); else goBack(); return; }
@@ -639,7 +628,6 @@ function press(btn){
     else if(cur==="items") openItem();
     else if(cur==="detail") detailNext();
     else if(cur==="game") gameInput("A");
-    else if(cur==="title") titleStart();
     return;
   }
   if (btn === "B"){ if(cur==="game") gameInput("B"); else goBack(); return; }
@@ -647,15 +635,18 @@ function press(btn){
 function goBack(){
   if (S.screen === "items"){ show("menu"); renderMenu(); }
   else if (S.screen === "detail"){ show("items"); renderItems(); }
-  else if (S.screen === "menu"){ beepBack(); show("title"); renderTitle(); }
+  else if (S.screen === "menu"){ beepBack(); show("title"); }
 }
 /* --- shared input-hold state: lets a held D-pad glide a paddle --- */
-const hold = { dir: null };
+const hold = { dir: null, since: 0 };
 function setHold(btn){
-  hold.dir = (btn === "UP" || btn === "DOWN" || btn === "LEFT" || btn === "RIGHT") ? btn : null;
+  if (btn === "UP" || btn === "DOWN" || btn === "LEFT" || btn === "RIGHT"){
+    hold.dir = btn; hold.since = performance.now();
+  }
 }
-// auto-release: a stuck "held" key would freeze a paddle if focus is lost
-setInterval(()=>{ hold.dir = null; }, 400);   // ponytail: poll clear, not per-key tracking
+// safety net: clear a hold that outlived its input source (lost keyup/focus)
+// ponytail: blanket 2s clear, not per-source tracking — one timer, bounded staleness
+setInterval(()=>{ if (hold.dir && performance.now() - hold.since > 2000) hold.dir = null; }, 500);
 
 /* --- button press flash (A/B get a pressed inset) --- */
 const flashId = { A:"btn-a", B:"btn-b" };
@@ -680,7 +671,9 @@ $("dpad").addEventListener("click", e=>{
   const r = e.currentTarget.getBoundingClientRect();
   const dx = e.clientX - (r.left + r.width/2);
   const dy = e.clientY - (r.top + r.height/2);
-  press(Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? "LEFT" : "RIGHT") : (dy < 0 ? "UP" : "DOWN"));
+  const dir = Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? "LEFT" : "RIGHT") : (dy < 0 ? "UP" : "DOWN");
+  hold.dir = null;        // a tap is a tap — don't let the pointerdown hold linger
+  press(dir);
 });
 // keyboard
 const KEYS = {
@@ -693,6 +686,8 @@ document.addEventListener("keydown", e=>{
   if (KEYS[e.key] !== undefined){
     e.preventDefault();
     if (e.repeat) return;          // OS key-repeat must not stack presses
+    // a focused button fires its own click on Enter/Space — don't double-dispatch
+    if (e.target.closest("button")) return;
     setHold(KEYS[e.key]);
     press(KEYS[e.key]);
   }
@@ -721,7 +716,6 @@ document.addEventListener("keyup", e=>{
 const G = {           // active game state
   name: null, mode: "idle",      // idle | countdown | playing | over | simonShow
   raf: null, last: 0, acc: 0,
-  snake: null, pong: null, simon: null,
   cv: () => $("game-canvas"),
 };
 const LCD_SHADES = ["#0f380f","#306230","#8bac0f","#9bbc0f"];
@@ -769,7 +763,6 @@ function startGame(name){
   g.init();
   runLoop();
 }
-function renderGame(){ if (G.name) GAMES[G.name].init(); }   // re-enter after SELECT/START
 function stopGame(){
   if (G.raf){ cancelAnimationFrame(G.raf); G.raf = null; }
   G.name = null; G.mode = "idle";
@@ -798,6 +791,7 @@ function gameInput(btn){
 GAMES.snake = {
   title: "Snake", tps: 8,
   init(){
+    this.tps = 8;                 // GAMES.snake is a singleton — reset the speed-up
     const mid = 9;
     this.snake = [{x:8,y:mid},{x:7,y:mid},{x:6,y:mid}];
     this.dir = {x:1,y:0}; this.nextDir = {x:1,y:0};
@@ -806,7 +800,12 @@ GAMES.snake = {
     status(""); help("D-PAD MOVE · A PAUSE · B QUIT");
   },
   input(btn){
-    if (btn === "A"){ if (G.mode==="playing"){ G.mode="idle"; status("PAUSED"); beepBack(); } else if (G.mode!=="countdown"){ G.mode="playing"; status(""); blip(); } return; }
+    if (btn === "A"){
+      if (G.mode === "over") this.init();        // restart = fresh snake
+      else if (G.mode === "playing"){ G.mode = "idle"; status("PAUSED"); beepBack(); }
+      else if (G.mode !== "countdown"){ G.mode = "playing"; status(""); blip(); }
+      return;
+    }
     if (G.mode !== "playing" && G.mode !== "countdown") return;
     const d = {UP:{x:0,y:-1}, DOWN:{x:0,y:1}, LEFT:{x:-1,y:0}, RIGHT:{x:1,y:0}}[btn];
     if (!d) return;
@@ -836,10 +835,14 @@ GAMES.snake = {
     if (G.mode === "playing") status("SCORE " + this.score + " · BEST " + getBest("snake"));
   },
   placeFood(){
-    let f;
-    do { f = { x: Math.floor(Math.random()*24), y: Math.floor(Math.random()*18) }; }
-    while (this.snake.some(s => s.x === f.x && s.y === f.y));
-    this.food = f;
+    // ponytail: bounded retries, then a linear free-cell scan — never spins on a full board
+    for (let tries = 0; tries < 100; tries++){
+      const f = { x: Math.floor(Math.random()*24), y: Math.floor(Math.random()*18) };
+      if (!this.snake.some(s => s.x === f.x && s.y === f.y)){ this.food = f; return; }
+    }
+    for (let y = 0; y < 18; y++) for (let x = 0; x < 24; x++){
+      if (!this.snake.some(s => s.x === x && s.y === y)){ this.food = {x, y}; return; }
+    }
   },
   draw(){
     clearLcd();
@@ -866,10 +869,14 @@ GAMES.pong = {
     status("FIRST TO 7"); help("D-PAD UP/DOWN · A SERVE · B QUIT");
   },
   input(btn){
-    if (btn === "A"){ if (!this.ball && G.mode !== "over"){ this.serve(); blip(); } return; }
+    if (btn === "A"){
+      if (G.mode === "over"){ this.init(); blip(); return; }   // rematch, as the legend promises
+      if (!this.ball && G.mode !== "over"){ this.serve(); blip(); }
+      return;
+    }
     if (G.mode !== "playing") return;
     if (btn === "UP"){ this.py = Math.max(0, this.py - 3); }
-    if (btn === "DOWN"){ this.py = Math.min(28, this.py + 3); }
+    if (btn === "DOWN"){ this.py = Math.min(27, this.py + 3); }   // 27*2.5+16 = 83.5 < 84
   },
   serve(){
     this.ball = { x: 44, y: 21, vx: this.serveL ? -0.7 : 0.7, vy: (Math.random() > 0.5 ? 1 : -1) * 0.45 };
@@ -882,7 +889,7 @@ GAMES.pong = {
     if (G.mode === "playing"){
       // held D-pad / arrow: smooth paddle glide while the button stays down
       if (hold.dir === "UP")   this.py = Math.max(0, this.py - 0.55);
-      if (hold.dir === "DOWN") this.py = Math.min(28, this.py + 0.55);
+      if (hold.dir === "DOWN") this.py = Math.min(27, this.py + 0.55);   // keep the 16px paddle on the 84px canvas
       const b = this.ball, W = 96, H = 84;
       b.x += b.vx; b.y += b.vy;
       if (b.y <= 1 || b.y >= H - 5){ b.vy = -b.vy; b.y = Math.max(1, Math.min(H-5, b.y)); blip(); }
@@ -952,10 +959,10 @@ GAMES.simon = {
     status("A START"); help("WATCH · REPEAT WITH D-PAD · B QUIT");
   },
   pads: [
-    { btn:"UP",    x:2,  y:2,  shade:1, freq:440 },
-    { btn:"RIGHT", x:1,  y:1,  shade:0, freq:587 },
-    { btn:"DOWN",  x:2,  y:2,  shade:1, freq:330 },
-    { btn:"LEFT",   x:1,  y:1,  shade:0, freq:523 }
+    { btn:"UP",    freq:440 },
+    { btn:"RIGHT", freq:587 },
+    { btn:"DOWN",  freq:330 },
+    { btn:"LEFT",   freq:523 }
   ],
   input(btn){
     if (btn === "A"){ if (G.mode === "idle" || G.mode === "over"){
@@ -1036,7 +1043,7 @@ GAMES.simon = {
  *  Boot
  * ------------------------------------------------------------------ */
 $("year").textContent = new Date().getFullYear();
-renderTitle();
+bootAnim();   // power-on jingle + sweep the moment the cart loads
 </script>
 </body>
 </html>
