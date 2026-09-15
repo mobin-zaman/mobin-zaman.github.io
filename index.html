@@ -414,6 +414,17 @@ function show(screen){
   S.screen = screen;
   // every page change chirps — covers buttons, keys, AND direct row clicks
   if (screen !== "title"){ blip(); }
+  // every screen change glitches (scanline sweep + entrance)
+  glitch(screen);
+}
+function glitch(screen){
+  const l = $("lcd");
+  l.classList.add("booting");
+  scr[screen].classList.add("enter");
+  setTimeout(()=>{
+    l.classList.remove("booting");
+    setTimeout(()=>scr[screen].classList.remove("enter"), 400);
+  }, 500);
 }
 function renderScreen(){
   if (!S.on){ lcd.classList.add("screen-off"); return; }
@@ -574,11 +585,7 @@ function toggleSound(){
   if (soundOn){ resumeAudio(); beepHigh(); }
   return soundOn;
 }
-function bootAnim(){
-  const l = $("lcd"); l.classList.add("booting");
-  $("scr-title").classList.add("enter");
-  setTimeout(()=>{ l.classList.remove("booting"); setTimeout(()=>$("scr-title").classList.remove("enter"), 400); }, 500);
-}
+function bootAnim(){ jingle(); }
 // unlock audio + mark booted on first interaction
 ["keydown","click","pointerdown"].forEach(evt => document.addEventListener(evt, ()=>{
   if (!booted){ booted = true; resumeAudio(); }
