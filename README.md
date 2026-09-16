@@ -31,9 +31,11 @@ register pointer and touch presses.
 
 Mohetuzzaman Mobin · software engineer / AI agent consultant / bassist
 
-- **Software development** → web development, custom software service
-- **Consulting** → self hosting, AI agents
-- **Music** → band one, band two
+- **Software development** → web development, recent works (Akram, Jazz Baul
+  Records, Dewan Raju)
+- **Consulting** → AI agent consultancy, self-hosted AI infra
+- **Music** → Shohojia (first joined band), Urban Genesis (founding member) —
+  each links its Facebook page
 - **Contact** → email, GitHub, GitLab (working links)
 
 **To change**: edit `index.html`, commit, push to `main` (GitHub Pages deploys).
