@@ -172,7 +172,7 @@
   .m-note { font-family: var(--font-lcd); font-size: 13px; opacity: .85; }
 
   /* detail panel (item blurb / contact) */
-  .detail { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 4px; overflow-y: auto; }
+  .detail { flex: 1; min-height: 0; display: flex; flex-direction: column; justify-content: center; gap: 6px; }
   .detail-links { display: flex; flex-direction: column; gap: 2px; margin-top: 4px; }
   .dlink { font-family: var(--font-pixel); font-size: 8px; line-height: 2; color: var(--lcd-0); text-decoration: none; }
   .dlink:hover { color: var(--lcd-3); background: var(--lcd-0); }
@@ -349,35 +349,65 @@ const SITE = {
   header: { name: "Mohetuzzaman Mobin",
             role: "software engineer / AI agent consultant / bassist" },
   menu: [
-    { key: "dev",  title: "Software development", note: "WEB + WORKS", items: [
-        { name: "Web development",
-          blurb: "Full-stack web, shipped since 2018.",
-          detail: ["PHP & Laravel → Node, Python, NestJS",
-                   "GraphQL APIs on MongoDB",
-                   "Logging-as-a-service + dashboard",
-                   "Banking data automation, Python",
-                   "AWS: host, scale, keep it cheap"] },
-        { name: "Recent works",
-          blurb: "Live sites I built recently.",
-          links: [
-            { name: "Akram — artist site", href: "https://mobin-zaman.github.io/jazz-baul-site/akram-site/" },
-            { name: "Jazz Baul Records",   href: "https://mobin-zaman.github.io/jazz-baul-site/jazz-baul/" },
-            { name: "Dewan Raju",          href: "https://gitlab.com/mobin-zaman/dewan-raju-website" }
-          ] }
+    { key: "dev",  title: "Software development", note: "BUILD", items: [
+        { name: "Web applications",
+          blurb: "Frontend to backend, shipped whole.",
+          detail: ["Web apps, sites & dashboards",
+                   "The APIs behind them, too",
+                   "Hand-built, not bloated"] },
+        { name: "APIs & automation",
+          blurb: "Glue that actually holds.",
+          detail: ["Integrations between anything",
+                   "Automation of the boring parts",
+                   "Boring, reliable, on schedule"] },
+        { name: "Cloud infrastructure",
+          blurb: "Deploys that stay up.",
+          detail: ["Containers, CI/CD, TLS",
+                   "Bills that don't surprise you",
+                   "Documented, so you own it"] },
+        { name: "AI-powered apps",
+          blurb: "Agents that do real work.",
+          detail: ["LLM features, not toys",
+                   "Agent toolchains + QA loops",
+                   "Humans still in the loop"] },
+        { name: "Legacy rescues",
+          blurb: "Second chances welcome.",
+          detail: ["Read it before rewriting it",
+                   "Strangle, don't big-bang",
+                   "Less painful every month"] },
+        { name: "The approach",
+          blurb: "Understand the problem. Build what matters. Remove what doesn't.",
+          detail: ["Good software should feel simpler than the problem it solves"] }
     ]},
-    { key: "consult", title: "Consulting", note: "AI + INFRA", items: [
-        { name: "AI agent consultancy",
-          blurb: "I run Hermes daily — so can you.",
-          detail: ["Hermes runs my code, QA and ops",
-                   "Skills, memory, browser bots, cron",
-                   "Agents review each change I ship",
-                   "Future-proof: automate the boring"] },
-        { name: "Self-hosted AI infra",
-          blurb: "Own the server, own the model.",
-          detail: ["Hermes + local LLMs on your box",
-                   "Docker, proxy, TLS — no lock-in",
-                   "AWS when the cloud pays off",
-                   "Your data never leaves your walls"] }
+    { key: "consult", title: "Consulting", note: "ADVICE", items: [
+        { name: "Architecture decisions",
+          blurb: "What to build, before you build it.",
+          detail: ["Technical decisions with tradeoffs named",
+                   "What NOT to build, and why",
+                   "Options you can actually choose between"] },
+        { name: "Backend & integrations",
+          blurb: "Five services doing one job.",
+          detail: ["Integrations that stop fighting",
+                   "One service where five were guessing",
+                   "Contract first, then code"] },
+        { name: "AI & agent workflows",
+          blurb: "From 'we should use AI' to agents that ship.",
+          detail: ["Adoption that survives contact with users",
+                   "Agentic workflows with real guardrails",
+                   "Build, measure, keep or kill"] },
+        { name: "Cloud infrastructure",
+          blurb: "Infra you understand and can run.",
+          detail: ["Right-sized, not default-sized",
+                   "Self-hosting where it pays",
+                   "No hostage-taking vendors"] },
+        { name: "Less painful systems",
+          blurb: "Systems that hurt less every month.",
+          detail: ["Find the actual bottleneck",
+                   "Fix the root cause, once",
+                   "Leave it better than you found it"] },
+        { name: "The principle",
+          blurb: "Technology should solve a problem, not become one.",
+          detail: ["If it needs building, fixing, simplifying or making sense of — let's talk"] }
     ]},
     { key: "music", title: "Music", note: "4 STRINGS", items: [
         { name: "Shohojia",
@@ -397,7 +427,13 @@ const SITE = {
         { name: "Simon",   game: "simon" }
     ]},
     { key: "contact", title: "Contact", note: "LINKS", items: [
-        { name: "Email",      href: "mailto:mohetuzzamanmobin@gmail.com",      label: "mohetuzzamanmobin@gmail.com" },
+        { name: "Let's talk",
+          blurb: "Got a project? Building something strange?",
+          detail: ["Software, AI, music — or an unnecessarily complicated idea",
+                   "Always interested in interesting problems",
+                   "Let's make something useful. Or at least something interesting."] },
+        { name: "Email",      href: "mailto:mohetuzzamanmobin@gmail.com",      label: "mohetuzzamanmobin@gmail.com",
+                                 target: "_blank", rel: "noopener" },
         { name: "GitHub",     href: "https://github.com/mobin-zaman",           label: "github.com/mobin-zaman",
                                  target: "_blank", rel: "noopener" },
         { name: "GitLab",     href: "https://gitlab.com/mobin-zaman",           label: "gitlab.com/mobin-zaman",
