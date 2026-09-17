@@ -1,0 +1,36 @@
+# Mohetuzzaman Mobin
+
+> Software engineer, AI agent consultant, and bassist. He builds software with AI agents and makes unnecessarily loud noises with four strings. Personal site styled as a Game Boy DMG cartridge. Built as a single self-contained static page (no server, no framework).
+
+## Software development
+
+- Web applications & backend systems
+- APIs, integrations & automation
+- Cloud infrastructure & deployments
+- AI-powered applications
+- Legacy systems
+
+## Consulting
+
+- Software architecture & technical decisions
+- Backend systems and integrations
+- AI adoption & agentic workflows
+- Cloud infrastructure
+- Making existing systems less painful
+
+## Music
+
+Bassist. Shohojia (first band), Urban Genesis (founding member).
+
+- [Shohojia - Facebook](https://www.facebook.com/shohojia)
+- [Urban Genesis - Facebook](https://www.facebook.com/profile.php?id=61572864972383)
+
+## Contact
+
+- [Email: mohetuzzamanmobin@gmail.com](mailto:mohetuzzamanmobin@gmail.com)
+- [GitHub](https://github.com/mobin-zaman)
+- [GitLab](https://gitlab.com/mobin-zaman)
+
+## External
+
+- [Homepage](https://mobin-zaman.github.io/)
