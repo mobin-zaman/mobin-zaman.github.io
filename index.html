@@ -413,8 +413,8 @@ const SITE = {
           "Urban Genesis — founding member.",
           "NOW PLAYING ON THIS CART:",
           "Vivaldi — Violin Concerto in A minor,",
-          "RV 356, 1st mvt. As 8-bit. Press A.",
-          "Bassists also appreciate a good bassline."
+          "RV 356, 1st mvt. As 8-bit.",
+          "A: stop / play · M: mute the whole cart."
         ],
         links: [
           { name: "Shohojia · Facebook",      href: "https://www.facebook.com/shohojia" },
@@ -564,6 +564,8 @@ function renderPage(){
   b.innerHTML = html;
   const pl = $("music-play");
   if (pl) pl.addEventListener("click", e=>{ e.preventDefault(); resumeAudio(); toggleMusic(); });
+  // autoplay on arrival — the gesture that navigated here already unlocked audio
+  if (c.key === "music" && booted && !MU.on) MU.on = startMusic();
 }
 
 /* --- items (submenu of current category) --- */
@@ -660,8 +662,11 @@ function jingle(){ // boot fanfare: two stereo-spread arpeggio voices
   });
 }
 function toggleSound(){
+  const wasOn = soundOn;
   soundOn = !soundOn;
   if (soundOn){ resumeAudio(); beepHigh(); }
+  // the running loop can't be "playing" while muted — fold it to idle
+  if (wasOn && !soundOn && MU.on){ stopMusic(); MU.on = false; musicState(false); }
   return soundOn;
 }
 function bootAnim(){ jingle(); }   // site power-on: called once at load, below
