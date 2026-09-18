@@ -425,7 +425,9 @@ const SITE = {
     { key: "games", title: "Games", note: "PLAY", items: [
         { name: "Snake",   game: "snake" },
         { name: "Pong",    game: "pong" },
-        { name: "Simon",   game: "simon" }
+        { name: "Breakout", game: "breakout" },
+        { name: "Tetris",   game: "tetris" },
+        { name: "Reversi", game: "reversi" }
     ]},
     { key: "contact", title: "Contact", note: "LINKS", page: {
         lines: [
@@ -833,11 +835,11 @@ document.addEventListener("keyup", e=>{
 }));
 
 /* ------------------------------------------------------------------ *
- *  Games — SNAKE / PONG / SIMON. One canvas, one rAF loop, 4 LCD shades.
+ *  Games — SNAKE / PONG / BREAKOUT / TETRIS / REVERSI. One canvas, one rAF
  *  Input via gameInput(btn), same dispatcher as the rest of the site.
  * ------------------------------------------------------------------ */
 const G = {           // active game state
-  name: null, mode: "idle",      // idle | countdown | playing | over | simonShow
+  name: null, mode: "idle",      // idle | countdown | playing | over
   raf: null, last: 0, acc: 0,
   cv: () => $("game-canvas"),
 };
@@ -1071,93 +1073,325 @@ GAMES.pong = {
   }
 };
 
-/* ================================================================ SIMON
- * repeat the growing tone+pad sequence. 4 pads mapped to the D-pad. */
-GAMES.simon = {
-  title: "Simon", tps: 8,
+
+/* ================================================================ BREAKOUT
+ * knock out the brick wall; D-PAD glides the bat, A launches. 3 lives,
+ * the wall refills endlessly so the run keeps going. */
+GAMES.breakout = {
+  title: "Breakout", tps: 60,
   init(){
-    this.seq = []; this.inputCount = 0; this.score = 0;
-    this.flash = null; this.flashTimer = 0;
-    G.mode = "idle";
-    status("A START"); help("WATCH · REPEAT WITH D-PAD · B QUIT");
+    this.bx = 44; this.ball = null; this.lives = 3; this.score = 0;
+    this.bricks = [];
+    for (let r = 0; r < 4; r++) for (let c = 0; c < 6; c++)
+      this.bricks.push({ x: c*16+2, y: r*7+6, on: true, s: r < 2 ? 0 : 1 });
+    G.mode = "idle"; this.serveTimer = 0;
+    status("LIVES 3"); help("A LAUNCH · D-PAD MOVE · B QUIT");
   },
-  pads: [
-    { btn:"UP",    freq:440 },
-    { btn:"RIGHT", freq:587 },
-    { btn:"DOWN",  freq:330 },
-    { btn:"LEFT",   freq:523 }
-  ],
   input(btn){
-    if (btn === "A"){ if (G.mode === "idle" || G.mode === "over"){
-      if (G.mode === "over") this.seq = [];              // fresh run after a loss
-      this.roundStart(); } return; }
-    if (G.mode !== "playing") return;
-    const idx = this.pads.findIndex(p => p.btn === btn);
-    if (idx < 0) return;
-    this.flashPad(idx);
-    const expected = this.seq[this.inputCount];
-    if (idx === expected){
-      this.inputCount++;
-      if (this.inputCount >= this.seq.length){        // round clear
-        this.score = this.seq.length;
-        const b = setBest("simon", this.score);
-        status("ROUND CLEAR · " + (b ? "NEW BEST!" : "BEST " + getBest("simon")));
-        G.mode = "idle"; this.roundTimer = 0; beepHigh();
-      }
-    } else {                                            // wrong
-      G.mode = "over";
-      status("WRONG! · BEST " + getBest("simon"));
-      help("A RESTART · B QUIT"); beepBack();
+    if (btn === "A"){
+      if (G.mode === "over"){ this.init(); blip(); return; }      // fresh wall + lives
+      if (!this.ball && G.mode !== "over"){ this.launch(); blip(); }
+      return;
     }
+    if (G.mode !== "playing") return;
+    if (btn === "LEFT")  this.bx = Math.max(4, this.bx - 4);
+    if (btn === "RIGHT") this.bx = Math.min(72, this.bx + 4);     // 96 - bat 20 - margin 4
   },
-  roundStart(){
-    this.seq.push(Math.floor(Math.random()*4));
-    this.inputCount = 0;
-    G.mode = "simonShow"; this.showIdx = 0; this.showTimer = 0;
-    status("ROUND " + (this.seq.length) + " · WATCH");
-    blip();
-  },
-  flashPad(i){
-    const p = this.pads[i];
-    this.flash = i; this.flashTimer = 3;
-    tone(p.freq, 120, "square", 0.08, i % 2 ? 0.3 : -0.3);
+  launch(){
+    this.ball = { x: this.bx + 8, y: 60, vx: (Math.random() > 0.5 ? 1 : -1) * 0.5, vy: -0.75 };
+    G.mode = "playing";
+    status("LIVES " + this.lives + " · SCORE " + this.score);
   },
   step(){
-    if (this.flash && --this.flashTimer <= 0) this.flash = null;
-    if (G.mode === "simonShow"){
-      this.showTimer++;
-      if (this.showTimer >= 6){                        // ~0.75s per pad
-        this.showTimer = 0;
-        if (this.showIdx < this.seq.length){ this.flashPad(this.seq[this.showIdx++]); }
-        else { G.mode = "playing"; status("ROUND " + this.seq.length + " · YOUR TURN"); }
+    if (G.mode === "playing" && !this.ball) G.mode = "idle";      // invariant: playing => live ball
+    if (!this.ball && G.mode !== "over"){
+      if (++this.serveTimer > 90){ this.serveTimer = 0; this.launch(); }   // auto-serve, never a dead court
+    }
+    if (G.mode !== "playing") return;
+    if (hold.dir === "LEFT")  this.bx = Math.max(4, this.bx - 0.6);
+    if (hold.dir === "RIGHT") this.bx = Math.min(72, this.bx + 0.6);
+    const b = this.ball, W = 96, H = 84;
+    b.x += b.vx; b.y += b.vy;
+    if (b.x <= 1 || b.x >= W - 5){ b.vx = -b.vx; b.x = Math.max(1, Math.min(W-5, b.x)); blip(); }
+    if (b.y <= 1){ b.vy = -b.vy; b.y = 1; blip(); }
+    // bat: x = bx, 20 wide, y = 74
+    if (b.vy > 0 && b.y + 4 >= 74 && b.y <= 80 && b.x + 4 >= this.bx && b.x <= this.bx + 20){
+      b.vy = -Math.abs(b.vy);
+      b.vx = ((b.x - (this.bx + 10)) / 10) * 0.8;                 // edge of the bat angles the ball
+      blip();
+    }
+    for (const k of this.bricks){                                 // 6x4 wall, 14x6 bricks
+      if (!k.on) continue;
+      if (b.x + 4 > k.x && b.x < k.x + 14 && b.y + 4 > k.y && b.y < k.y + 6){
+        k.on = false; b.vy = -b.vy; this.score++;
+        status("LIVES " + this.lives + " · SCORE " + this.score); beepHigh();
+        break;
       }
-    } else if (G.mode === "idle" && this.seq.length && this.roundTimer !== undefined){
-      if (++this.roundTimer > 24){ this.roundStart(); }   // brief beat after a clear round
+    }
+    if (!this.bricks.some(k => k.on)){                             // wall cleared -> refill
+      this.bricks.forEach(k => k.on = true); beepHigh();
+    }
+    if (b.y > H){                                                  // lost the ball
+      this.lives--; this.ball = null;
+      if (this.lives <= 0){
+        G.mode = "over"; const bb = setBest("breakout", this.score);
+        status("GAME OVER · " + (bb ? "NEW BEST!" : "BEST " + getBest("breakout")));
+        help("A RESTART · B QUIT"); beepBack();
+      } else {
+        G.mode = "idle"; this.serveTimer = 0;
+        status("LIVES " + this.lives + " · SCORE " + this.score); beepBack();
+      }
     }
   },
   draw(){
     clearLcd();
     const c = ctx();
-    // 4 quadrant pads; the lit one paints bright, others dim
-    const qw = 42, qh = 34;
-    c.fillStyle = LCD_SHADES[2]; c.fillRect(4, 4, qw, qh);   // UL = UP
-    c.fillStyle = LCD_SHADES[2]; c.fillRect(50, 4, qw, qh);  // UR = RIGHT
-    c.fillStyle = LCD_SHADES[2]; c.fillRect(4, 46, qw, qh);  // DL = DOWN
-    c.fillStyle = LCD_SHADES[2]; c.fillRect(50, 46, qw, qh); // DR = LEFT
-    if (this.flash !== null){
-      c.fillStyle = LCD_SHADES[0];
-      const ps = [[4,4],[50,4],[4,46],[50,46]];
-      c.fillRect(ps[this.flash][0], ps[this.flash][1], qw, qh);
-    }
-    c.fillStyle = LCD_SHADES[0];
-    c.fillRect(44, 38, 8, 8);                             // centre hub
-    paintText("U", 22, 18, this.flash===0 ? 3 : 0);
-    paintText("R", 66, 18, this.flash===1 ? 3 : 0);
-    paintText("D", 22, 60, this.flash===2 ? 3 : 0);
-    paintText("L", 66, 60, this.flash===3 ? 3 : 0);
+    this.bricks.forEach(k => { if (k.on){ c.fillStyle = LCD_SHADES[k.s]; c.fillRect(k.x, k.y, 14, 6); } });
+    c.fillStyle = LCD_SHADES[0]; c.fillRect(this.bx, 74, 20, 4);
+    if (this.ball){ c.fillStyle = LCD_SHADES[0]; c.fillRect(this.ball.x, this.ball.y, 4, 4); }
     if (G.mode === "over"){
-      c.fillStyle = LCD_SHADES[3]; c.fillRect(14, 32, 68, 20);
-      paintText("WRONG!", 24, 38, 0);
+      c.fillStyle = LCD_SHADES[3]; c.fillRect(10, 30, 76, 24);
+      paintText("GAME OVER", 14, 36, 0);
+      paintText("SCORE " + this.score, 14, 46, 1);
+    }
+  }
+};
+
+/* ================================================================ TETRIS
+ * stack the falling blocks; full rows clear and it speeds up.
+ * D-PAD moves, UP spins, A hard-drops. */
+GAMES.tetris = {
+  title: "Tetris", tps: 12,
+  W: 10, H: 18, u: 4, ox: 16, oy: 6,          // 40x72 well + NEXT panel on the right
+  pieces: {
+    I: [[1,1,1,1]],                O: [[1,1],[1,1]],  T: [[0,1,0],[1,1,1]],
+    S: [[0,1,1],[1,1,0]],          Z: [[1,1,0],[0,1,1]],
+    J: [[1,0,0],[1,1,1]],          L: [[0,0,1],[1,1,1]]
+  },
+  keys(){ return Object.keys(this.pieces); },
+  init(){
+    this.grid = Array.from({length: this.H}, () => Array(this.W).fill(-1));
+    this.score = 0; this.lines = 0; this.dropAcc = 0;
+    this.next = null;
+    G.mode = "playing";
+    this.spawn();
+    status("LINES 0"); help("D-PAD MOVE · UP SPIN · A DROP · B QUIT");
+  },
+  spawn(){
+    const ks = this.keys();
+    const k = this.next || ks[Math.floor(Math.random()*ks.length)];
+    this.next = ks[Math.floor(Math.random()*ks.length)];
+    this.key = k; this.shape = this.pieces[k].map(r => r.slice());
+    this.shade = ks.indexOf(k) % 3;                    // 4 LCD shades for 7 pieces: I/J share, etc.
+    this.px = Math.floor((this.W - this.shape[0].length) / 2);
+    this.py = 0;
+    if (this.collides(this.shape, this.px, this.py)) this.gameOver();
+  },
+  collides(shape, nx, ny){
+    for (let r = 0; r < shape.length; r++) for (let c = 0; c < shape[r].length; c++){
+      if (!shape[r][c]) continue;
+      const x = nx + c, y = ny + r;
+      if (x < 0 || x >= this.W || y >= this.H) return true;
+      if (y >= 0 && this.grid[y][x] !== -1) return true;
+    }
+    return false;
+  },
+  gameOver(){
+    G.mode = "over";
+    const b = setBest("tetris", this.score);
+    status("GAME OVER · " + (b ? "NEW BEST!" : "BEST " + getBest("tetris")));
+    help("A RESTART · B QUIT"); beepBack();
+  },
+  input(btn){
+    if (btn === "A"){
+      if (G.mode === "over"){ this.init(); blip(); return; }
+      if (G.mode === "playing"){ this.hardDrop(); blip(); }
+      return;
+    }
+    if (G.mode !== "playing") return;
+    if (btn === "LEFT"  && !this.collides(this.shape, this.px-1, this.py)) this.px--;
+    if (btn === "RIGHT" && !this.collides(this.shape, this.px+1, this.py)) this.px++;
+    if (btn === "UP") this.spin();
+    if (btn === "DOWN"){
+      if (!this.collides(this.shape, this.px, this.py+1)) this.py++;
+      else this.lock();
+    }
+  },
+  spin(){                                             // clockwise matrix rotation
+    const r = this.shape[0].map((_, i) => this.shape.map(row => row[i]).reverse());
+    if (!this.collides(r, this.px, this.py)) this.shape = r;
+  },
+  hardDrop(){
+    while (!this.collides(this.shape, this.px, this.py+1)) this.py++;
+    this.lock();
+  },
+  lock(){
+    for (let r = 0; r < this.shape.length; r++) for (let c = 0; c < this.shape[r].length; c++)
+      if (this.shape[r][c] && this.py + r >= 0) this.grid[this.py+r][this.px+c] = this.shade;
+    let cleared = 0;
+    for (let y = this.H-1; y >= 0; y--){
+      if (this.grid[y].every(v => v !== -1)){
+        this.grid.splice(y, 1); this.grid.unshift(Array(this.W).fill(-1));
+        cleared++; y++;                               // rows shifted down: re-check this index
+      }
+    }
+    if (cleared){
+      this.lines += cleared;
+      this.score += cleared * 10 * cleared;           // singles cheap, quads pay
+      beepHigh(); status("LINES " + this.lines + " · SCORE " + this.score);
+    } else blip();
+    this.spawn();
+  },
+  step(){
+    if (G.mode !== "playing") return;
+    const speed = Math.max(3, 12 - Math.floor(this.lines / 5));   // faster every 5 lines
+    if (++this.dropAcc >= speed){ this.dropAcc = 0;
+      if (!this.collides(this.shape, this.px, this.py+1)) this.py++;
+      else this.lock();
+    }
+  },
+  draw(){
+    clearLcd();
+    const c = ctx(), u = this.u;
+    c.fillStyle = LCD_SHADES[2];                      // well frame
+    c.fillRect(this.ox-2, this.oy-2, this.W*u+4, 2);
+    c.fillRect(this.ox-2, this.oy+this.H*u, this.W*u+4, 2);
+    c.fillRect(this.ox-2, this.oy-2, 2, this.H*u+4);
+    c.fillRect(this.ox+this.W*u, this.oy-2, 2, this.H*u+4);
+    for (let y = 0; y < this.H; y++) for (let x = 0; x < this.W; x++){
+      const v = this.grid[y][x];
+      if (v !== -1){ c.fillStyle = LCD_SHADES[v]; c.fillRect(this.ox+x*u, this.oy+y*u, u, u); }
+    }
+    if (G.mode === "playing")
+      for (let r = 0; r < this.shape.length; r++) for (let cc = 0; cc < this.shape[r].length; cc++)
+        if (this.shape[r][cc]){ c.fillStyle = LCD_SHADES[this.shade]; c.fillRect(this.ox+(this.px+cc)*u, this.oy+(this.py+r)*u, u, u); }
+    const nx = this.ox + this.W*u + 8;                // NEXT panel
+    paintText("NEXT", nx, this.oy, 1);
+    if (this.next){
+      const p = this.pieces[this.next];
+      for (let r = 0; r < p.length; r++) for (let cc = 0; cc < p[r].length; cc++)
+        if (p[r][cc]){ c.fillStyle = LCD_SHADES[1]; c.fillRect(nx + cc*u, this.oy+12 + r*u, u, u); }
+    }
+    if (G.mode === "over"){
+      c.fillStyle = LCD_SHADES[3]; c.fillRect(8, 32, 80, 20);
+      paintText("GAME OVER", 14, 38, 0);
+      paintText("SCORE " + this.score, 14, 48, 1);
+    }
+  }
+};
+
+/* ================================================================ REVERSI
+ * you (dark) vs the CPU (light) on a 6x6 board. Turn-based: the loop only
+ * paces the CPU's think pause, so step() is nearly empty. */
+GAMES.reversi = {
+  title: "Reversi", tps: 8,
+  N: 6, u: 12, ox: 12, oy: 6,                        // 72x72 board inside the 96x84 screen
+  DIRS: [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]],
+  init(){
+    this.b = Array.from({length: this.N}, () => Array(this.N).fill(0));
+    const m = this.N/2 - 1;
+    this.b[m][m] = 2; this.b[m+1][m+1] = 2;
+    this.b[m][m+1] = 1; this.b[m+1][m] = 1;
+    this.turn = 1; this.cx = m; this.cy = m; this.think = 0;
+    G.mode = "playing";
+    this.hint();
+  },
+  flips(x, y, p, board){                              // discs a move at (x,y) would flip
+    if (board[y][x]) return [];
+    const out = [];
+    for (const [dx, dy] of this.DIRS){
+      const line = [];
+      let nx = x+dx, ny = y+dy;
+      while (nx >= 0 && nx < this.N && ny >= 0 && ny < this.N && board[ny][nx] === 3-p){
+        line.push([nx, ny]); nx += dx; ny += dy;
+      }
+      if (line.length && nx >= 0 && nx < this.N && ny >= 0 && ny < this.N && board[ny][nx] === p)
+        out.push(...line);
+    }
+    return out;
+  },
+  legal(p, board){
+    const list = [];
+    for (let y = 0; y < this.N; y++) for (let x = 0; x < this.N; x++)
+      if (this.flips(x, y, p, board).length) list.push([x, y]);
+    return list;
+  },
+  count(p){ let n = 0; for (let y = 0; y < this.N; y++) for (let x = 0; x < this.N; x++) if (this.b[y][x] === p) n++; return n; },
+  hint(){
+    const mine = this.legal(this.turn, this.b).length, theirs = this.legal(3-this.turn, this.b).length;
+    if (!mine && !theirs){ this.end(); return; }
+    if (!mine){ this.turn = 3-this.turn; status("PASS · CPU TURN"); }   // no move: skip
+    else status(this.turn === 1 ? "YOUR TURN · " + this.count(1) + "/" + this.count(2) : "CPU TURN · " + this.count(1) + "/" + this.count(2));
+    help("D-PAD MOVE · A PLACE · B QUIT");
+  },
+  end(){
+    G.mode = "over";
+    const s = this.count(1) - this.count(2);
+    const b = s > 0 && setBest("reversi", s);
+    status(s > 0 ? "YOU WIN +" + s : s === 0 ? "DRAW" : "CPU WINS");
+    help((b ? "NEW BEST! · " : "") + "A RESTART · B QUIT");
+    if (s > 0) jingle(); else beepBack();
+  },
+  place(x, y, p){
+    this.b[y][x] = p;
+    for (const [fx, fy] of this.flips(x, y, p, this.b)) this.b[fy][fx] = p;
+    blip();
+    this.turn = 3-p;
+    this.hint();
+  },
+  input(btn){
+    if (btn === "A"){
+      if (G.mode === "over"){ this.init(); blip(); return; }
+      if (this.turn !== 1) return;                    // not your turn
+      if (this.flips(this.cx, this.cy, 1, this.b).length) this.place(this.cx, this.cy, 1);
+      else beepBack();                                // square isn't a legal move
+      return;
+    }
+    if (G.mode !== "playing") return;
+    if (btn === "LEFT")  this.cx = (this.cx + this.N - 1) % this.N;
+    if (btn === "RIGHT") this.cx = (this.cx + 1) % this.N;
+    if (btn === "UP")    this.cy = (this.cy + this.N - 1) % this.N;
+    if (btn === "DOWN")  this.cy = (this.cy + 1) % this.N;
+  },
+  step(){
+    if (G.mode !== "playing" || this.turn !== 2) return;
+    if (++this.think < 14) return;                    // ~1.7s pause so the CPU move reads as a move
+    this.think = 0;
+    const moves = this.legal(2, this.b);
+    if (!moves.length){ this.turn = 1; this.hint(); return; }
+    let best = moves[0], bestN = -1;                  // greedy: most discs flipped
+    for (const [x, y] of moves){
+      const n = this.flips(x, y, 2, this.b).length;
+      if (n > bestN){ bestN = n; best = [x, y]; }
+    }
+    this.place(best[0], best[1], 2);
+  },
+  draw(){
+    clearLcd();
+    const c = ctx(), u = this.u;
+    c.fillStyle = LCD_SHADES[2]; c.fillRect(this.ox-2, this.oy-2, this.N*u+4, this.N*u+4);
+    c.fillStyle = LCD_SHADES[0]; c.fillRect(this.ox, this.oy, this.N*u, this.N*u);   // dark felt
+    c.fillStyle = LCD_SHADES[2];
+    for (let i = 1; i < this.N; i++){ c.fillRect(this.ox+i*u, this.oy, 1, this.N*u); c.fillRect(this.ox, this.oy+i*u, this.N*u, 1); }
+    for (let y = 0; y < this.N; y++) for (let x = 0; x < this.N; x++){
+      const v = this.b[y][x];
+      if (v){ c.fillStyle = LCD_SHADES[v === 1 ? 0 : 2]; c.fillRect(this.ox+x*u+3, this.oy+y*u+3, u-6, u-6); }
+    }
+    if (G.mode === "playing" && this.turn === 1){
+      for (const [x, y] of this.legal(1, this.b)){    // legal-move dots
+        c.fillStyle = LCD_SHADES[1];
+        c.fillRect(this.ox+x*u + u/2 - 1, this.oy+y*u + u/2 - 1, 2, 2);
+      }
+      const bx = this.ox+this.cx*u, by = this.oy+this.cy*u;   // cursor brackets
+      c.fillStyle = LCD_SHADES[3];
+      c.fillRect(bx+1, by+1, u-2, 2); c.fillRect(bx+1, by+u-3, u-2, 2);
+      c.fillRect(bx+1, by+1, 2, u-2); c.fillRect(bx+u-3, by+1, 2, u-2);
+    }
+    if (G.mode === "over"){
+      const s1 = this.count(1), s2 = this.count(2);
+      c.fillStyle = LCD_SHADES[3]; c.fillRect(10, 30, 76, 22);
+      paintText(s1 > s2 ? "YOU WIN!" : s1 === s2 ? "DRAW" : "CPU WINS", 18, 36, 0);
+      paintText(s1 + " / " + s2, 18, 46, 1);
     }
   }
 };
