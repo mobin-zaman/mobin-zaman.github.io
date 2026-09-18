@@ -20,7 +20,7 @@
 
 ## Music
 
-Bassist. Shohojia (first band), Urban Genesis (founding member). The Music page also plays an 8-bit (Web Audio square-wave) rendition of Vivaldi's Violin Concerto in A minor, RV 356, 1st movement — press A or the on-screen row; no audio files.
+Bassist. Shohojia (first band), Urban Genesis (founding member). The Music page also plays Vivaldi's Violin Concerto in A minor, RV 356, 1st movement, rendered from the authentic score through the FluidR3 orchestral soundfont as a real string section and band-limited to a radio band with static — press A or the on-screen row; one mp3 file, no runtime synthesis.
 
 - [Shohojia - Facebook](https://www.facebook.com/shohojia)
 - [Urban Genesis - Facebook](https://www.facebook.com/profile.php?id=61572864972383)

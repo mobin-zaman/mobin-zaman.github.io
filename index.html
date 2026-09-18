@@ -285,7 +285,7 @@
 <h1 class="page">MOBIN.EXE</h1>
 
 <div class="gameboy" id="gameboy">
-  <audio id="music-audio" src="assets/rv356-8bit.mp3" preload="auto"></audio>
+  <audio id="music-audio" src="assets/rv356-radio.mp3" preload="auto"></audio>
   <div class="screen-bezel">
     <div class="lcd" id="lcd">
       <div class="screen" id="scr-title">
@@ -350,7 +350,7 @@
 <div class="legend">
   <b>D-PAD</b>/arrows move &nbsp;·&nbsp; <b>A</b> select/enter <kbd>Z</kbd> <kbd>↵</kbd><br>
   <b>B</b> back <kbd>X</kbd> &nbsp;·&nbsp; <b>SELECT</b> home <kbd>Shift</kbd> &nbsp;·&nbsp; <b>START</b> open menu<br>
-  <b>M</b> sound on/off — tune in with 8-bit chirps under the hood<br>
+  <b>M</b> sound on/off — tune in, strings through radio static<br>
   <b>Games</b> — D-PAD to play, <b>A</b> pause/serve, <b>B</b> quit; best score saved on the cart
 </div>
 
@@ -414,7 +414,7 @@ const SITE = {
           "Urban Genesis — founding member.",
           "NOW PLAYING ON THIS CART:",
           "Vivaldi — Violin Concerto in A minor,",
-          "RV 356, 1st mvt. As 8-bit.",
+          "RV 356, 1st mvt. Live strings, radio.",
           "A: stop / play · M: mute the whole cart."
         ],
         links: [
@@ -488,7 +488,7 @@ function show(screen){
   // every screen change glitches (scanline sweep + entrance)
   glitch(screen);
   if (screen !== "game") stopGame();
-  stopMusicIfVisible();   // the 8-bit loop dies the moment you leave Music
+  stopMusicIfVisible();   // the music dies the moment you leave Music
 }
 function glitch(screen){
   const l = $("lcd");
@@ -558,9 +558,9 @@ function renderPage(){
   if (c.key === "music"){
     html += `<div class="detail-links">`+
             `<a class="dlink play idle" id="music-play" href="javascript:void(0)" `+
-            `aria-label="Play Vivaldi RV 356 in 8-bit">`+
+            `aria-label="Play Vivaldi RV 356 through a radio">`+
             `<span class="note-bars"><span></span><span></span><span></span><span></span></span>`+
-            `<span class="play-label">VIVALDI · RV 356 8-BIT ▸ PLAY (A)</span></a>`+
+            `<span class="play-label">VIVALDI · RV 356 RADIO ▸ PLAY (A)</span></a>`+
             `</div>`;
   }
   html += `<div class="bd-help">D-PAD ▲▼ scroll · B: back</div>`;
@@ -626,7 +626,7 @@ function scrollSel(list, kind){
 }
 
 /* ------------------------------------------------------------------ *
- *  8-bit audio — synthesized Game Boy beeps (stereo-panned), no files.
+/*  8-bit UI beeps — synthesized Game Boy blips (stereo-panned), no files.
  *  Unlocks lazily on the first user gesture (autoplay policy).
  * ------------------------------------------------------------------ */
 let AC = null, soundOn = true, booted = false;
@@ -674,17 +674,18 @@ function toggleSound(){
 }
 function bootAnim(){ jingle(); }   // site power-on: called once at load, below
 /* ------------------------------------------------------------------ *
- *  8-bit music — Vivaldi, Violin Concerto in A minor RV 356 (I. Allegro)
- *  Rendered offline from the authentic score (band-limited square/triangle,
- *  3 voices). One file, no oscillators, no per-tick work at all.
- * ------------------------------------------------------------------ */
+/*  Music — Vivaldi, Violin Concerto in A minor RV 356 (I. Allegro)
+ *  Rendered from the authentic score through the FluidR3 orchestral
+ *  soundfont as a real string section, then band-limited to a radio band
+ *  (280–3400 Hz) with bit-crushed static — sounds like it's on the air.
+ *  ------------------------------------------------------------------ */
 const MU = { on: false, audio: null };
 function musicState(playing){
   const row = $("music-play");
   if (!row) return;
   row.classList.toggle("idle", !playing);
   const t = row.querySelector(".play-label");
-  if (t) t.textContent = playing ? "NOW PLAYING · RV 356 ▸ STOP (A)" : "VIVALDI · RV 356 8-BIT ▸ PLAY (A)";
+  if (t) t.textContent = playing ? "NOW PLAYING · RV 356 ▸ STOP (A)" : "VIVALDI · RV 356 RADIO ▸ PLAY (A)";
 }
 function startMusic(){
   if (!soundOn) return false;               // respects the M toggle
