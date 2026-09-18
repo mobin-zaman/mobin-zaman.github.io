@@ -285,6 +285,7 @@
 <h1 class="page">MOBIN.EXE</h1>
 
 <div class="gameboy" id="gameboy">
+  <audio id="music-audio" src="assets/rv356-8bit.mp3" preload="auto"></audio>
   <div class="screen-bezel">
     <div class="lcd" id="lcd">
       <div class="screen" id="scr-title">
@@ -672,58 +673,10 @@ function toggleSound(){
 function bootAnim(){ jingle(); }   // site power-on: called once at load, below
 /* ------------------------------------------------------------------ *
  *  8-bit music — Vivaldi, Violin Concerto in A minor RV 356 (I. Allegro)
- *  Melody transcribed from the score, played by Web Audio square waves.
- *  [tick:midi:dur] on a 1/32-note grid; A4 = 69. No audio files.
+ *  Rendered offline from the authentic score (band-limited square/triangle,
+ *  3 voices). One file, no oscillators, no per-tick work at all.
  * ------------------------------------------------------------------ */
-const TUNE = {
-  mel: "28:76:4,32:81:4,36:81:4,40:81:4,44:81:4,48:81:4,52:84:2,54:83:2,56:81:4,60:84:2,62:83:2,64:81:4,68:84:2,70:83:2,72:81:4,76:79:2,78:77:2,80:76:4,84:74:2,86:72:2,88:71:4,92:76:4,96:72:4,100:69:4,104:69:4,108:76:4,112:81:4,116:81:4,120:81:4,124:81:4,128:81:2,130:79:2,132:77:2,134:76:2,136:77:4,140:74:4,144:79:4,148:79:4,152:79:4,156:79:4,160:79:2,162:77:2,164:76:2,166:74:2,168:76:4,172:72:4,176:77:4,180:77:4,184:77:4,188:77:4,192:77:2,194:76:2,196:74:2,198:72:2,200:74:4,204:71:4,208:76:4,212:76:4,216:76:4,220:76:4,224:76:2,226:74:2,228:72:2,230:71:2,232:72:4,236:69:4,242:69:2,244:72:2,246:76:2,248:81:4,252:81:4,256:81:2,258:69:2,260:72:2,262:76:2,264:81:4,268:81:4,272:81:2,274:69:2,276:72:2,278:76:2,280:82:4,284:82:4,288:82:4,292:81:2,294:80:2,304:74:16,322:64:2,324:68:2,326:71:2,328:74:4,332:74:4,336:74:2,338:64:2,340:68:2,342:71:2,344:74:4,348:74:4,352:74:2,354:64:2,356:68:2,358:71:2,360:74:4,364:76:4,368:72:4,372:71:2,374:69:2,376:77:4,380:76:2,382:74:2,412:76:4,416:81:4,420:81:4,424:81:4,428:81:4,432:81:4,436:84:2,438:83:2,440:81:4,444:84:2,446:83:2,448:81:4,452:84:2,454:83:2,456:81:4,460:79:2,462:77:2,464:76:4,468:74:2,470:72:2,472:71:4,476:76:4,484:69:4,496:76:4,500:79:2,502:77:2,504:76:4,508:76:4",
-  bass: "36:45:8,40:48:8,44:45:8,52:45:8,56:48:8,60:45:8,68:45:8,72:48:8,76:45:8,84:45:8,88:44:8,92:40:8,96:33:8,100:45:8,104:48:8,108:45:8,116:49:8,120:37:8,124:33:8,132:50:8,136:38:8,140:50:8,148:47:8,152:35:8,156:31:8,164:48:8,168:36:8,172:48:8,180:45:8,184:33:8,188:29:8,192:59:8,196:47:8,200:35:8,204:47:8,208:59:8,212:44:8,216:32:8,220:28:8,224:57:8,228:45:8,232:33:8,236:45:8,244:45:8,248:48:8,252:45:8,260:45:8,264:48:8,268:45:8,276:45:8,280:50:8,284:49:8,288:50:8,292:52:8,296:53:8,300:50:8,304:47:8,312:45:8,316:47:8,320:40:8,324:56:8,328:59:8,336:40:8,340:56:8,344:59:8,352:40:8,356:56:8,360:59:8,368:45:8,372:48:8,376:50:8,380:47:8,384:48:8,388:50:8,392:52:8,396:40:8,400:45:8,404:45:8,408:48:8,412:45:8,420:45:8,424:48:8,428:45:8,436:45:8,440:48:8,444:45:8,452:45:8,456:48:8,460:45:8,468:45:8,472:44:8,476:40:8,484:45:8,488:48:8,492:45:8,500:52:8,504:48:8,508:45:8"
-};
-const MIDI = m => 440 * Math.pow(2, (m - 69) / 12);   // 12-TET
-const MU = {
-  on: false, step: 0, timer: null,
-  stepMs: 1000 / 8,                    // ♩=100 → 1/32 = 125ms
-  mel: TUNE.mel.split(",").map(s => s.split(":").map(Number)),
-  bass: TUNE.bass.split(",").map(s => s.split(":").map(Number)),
-};
-function musicVoice(n, vol, pan, type){     // one square-wave note
-  const c = ac(); if (!c || !soundOn) return;
-  const t = c.currentTime;
-  const o = c.createOscillator(), g = c.createGain();
-  o.type = type || "square";
-  o.frequency.setValueAtTime(MIDI(n[1]), t);
-  g.gain.setValueAtTime(0.0001, t);
-  g.gain.linearRampToValueAtTime(vol, t + 0.008);        // tiny click-free attack
-  g.gain.setValueAtTime(vol, t + MU.stepMs * n[2] * 0.9);
-  g.gain.exponentialRampToValueAtTime(0.0001, t + MU.stepMs * n[2]);
-  const p = c.createStereoPanner ? c.createStereoPanner() : null;
-  if (p){ p.pan.value = pan; o.connect(p); p.connect(g); }
-  else o.connect(g);
-  g.connect(c.destination);
-  o.start(t); o.stop(t + MU.stepMs * n[2] + 0.05);
-}
-function musicTick(){
-  // melody + bass both due this tick
-  MU.mel.forEach(n => { if (n[0] === MU.step) musicVoice(n, 0.075, -0.25, "square"); });
-  MU.bass.forEach(n => { if (n[0] === MU.step) musicVoice(n, 0.055, 0.3, "triangle"); });
-  MU.step++;
-  const last = Math.max(MU.mel[MU.mel.length-1][0] + MU.mel[MU.mel.length-1][2],
-                        MU.bass[MU.bass.length-1][0] + MU.bass[MU.bass.length-1][2]);
-  if (MU.step > last){ stopMusic(); MU.on = false; musicState(false); }   // end → idle
-}
-function startMusic(){
-  stopMusic();
-  resumeAudio();
-  if (!soundOn) return false;               // respects the M toggle
-  MU.step = 0;
-  musicState(true);
-  musicTick();                              // speak the pickup note now
-  MU.timer = setInterval(musicTick, MU.stepMs);
-  return true;
-}
-function stopMusic(){
-  if (MU.timer){ clearInterval(MU.timer); MU.timer = null; }
-}
+const MU = { on: false, audio: null };
 function musicState(playing){
   const row = $("music-play");
   if (!row) return;
@@ -731,10 +684,25 @@ function musicState(playing){
   const t = row.querySelector(".play-label");
   if (t) t.textContent = playing ? "NOW PLAYING · RV 356 ▸ STOP (A)" : "VIVALDI · RV 356 8-BIT ▸ PLAY (A)";
 }
+function startMusic(){
+  if (!soundOn) return false;               // respects the M toggle
+  if (!MU.audio) MU.audio = $("music-audio");
+  const a = MU.audio;
+  if (!a) return false;
+  a.currentTime = 0;
+  const p = a.play();
+  if (p && p.catch) p.catch(()=>{});        // gesture-less play rejected: stay idle
+  if (a.paused) return false;
+  musicState(true);
+  return true;
+}
 function toggleMusic(){
   if (MU.on) { stopMusic(); MU.on = false; musicState(false); }
   else { MU.on = startMusic(); }              // no fake "playing" if sound is off
   return MU.on;
+}
+function stopMusic(){
+  if (MU.audio && !MU.audio.paused) MU.audio.pause();
 }
 // ponytail: the loop can't outlive the player — leaving the screen kills it
 function stopMusicIfVisible(){
