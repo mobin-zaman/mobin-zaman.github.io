@@ -1189,7 +1189,7 @@ GAMES.ghost = {
     this.hp = this.HP; this.ihurt = 0;
     this.rec = [];                                // per-tick [dirByte, attackFlag]
     this.recT0 = 0;                               // tick the rec[0] entry was recorded at
-    this.ghost = null;                            // { x, y, a, t, i, plan }
+    this.ghost = null;                            // { px, py, pa, t, i, plan }
     this.kills = 0;
     this.attackT = 0; this.hitFlash = 0; this.hurtFlash = 0;
     this.eturnT = 0; this.edx = 0; this.edy = 0;
@@ -1256,16 +1256,21 @@ GAMES.ghost = {
     // so the cap TRIMS instead (drops the oldest whole ticks and re-bases).
     const atk = (this.attackT === this.ATTACK_T - 1);   // the tick the swing started
     this.rec.push([this.DIRS[hold.dir] || 0, atk ? 1 : 0]);
-    if (this.rec.length > this.REC_MAX){ this.rec = this.rec.slice(-this.REC_MAX); this.recT0 += this.rec.length - this.REC_MAX; }
+    // the cap TRIMS (not shifts) to keep tick->index alignment, and recT0 must
+    // advance by the amount actually dropped — slice(-MAX) leaves length==MAX,
+    // so adding (len-MAX) was a no-op and long rounds silently desynced.
+    const excess = this.rec.length - this.REC_MAX;
+    if (excess > 0){ this.rec = this.rec.slice(excess); this.recT0 += excess; }
 
-    // knockback + clamp. The ring-out test must run BEFORE the friction decays
-    // the knockback below the 0.02 threshold — the enemy checks wall-first, and
-    // a different order here meant a launched player silently survived the wall.
+    // knockback + clamp. The ring-out test must see the UNCLAMPED launch position:
+    // px is still last tick's clamped value here (>= 1.2) while the wall band is
+    // <= 0.55, so testing before the move made ring-out unreachable. Test after
+    // the knockback move, before friction decays it below the launch threshold.
+    this.px += this.pkx; this.py += this.pky;
     const inWall = (this.px <= this.WALL || this.px >= this.MAP-1-this.WALL ||
                     this.py <= this.WALL || this.py >= this.MAP-1-this.WALL);
     const launching = (Math.abs(this.pkx) > 0.02 || Math.abs(this.pky) > 0.02);
     if (inWall && launching) return this.rungOut();
-    this.px += this.pkx; this.py += this.pky;
     this.pkx *= 0.85; this.pky *= 0.85;
     this.px = Math.max(1.2, Math.min(this.MAP-2.2, this.px));
     this.py = Math.max(1.2, Math.min(this.MAP-2.2, this.py));
@@ -1277,12 +1282,15 @@ GAMES.ghost = {
     // --- enemy: replay the ghost plan, else wander ---
     if (this.ghost){
       const g = this.ghost;
-      // rec index == tick only while the buffer never shifted; re-base with recT0
       while (g.i < g.plan.length && g.i <= g.t - this.recT0){       // rec index == tick: lockstep
         const f = g.plan[g.i];
         if (f[0]) this.applyInput(this.invDir(f[0]), g);
         if (f[1]) this.ghostAttack();
         g.i++;
+        // the ghost body gets the SAME clamp the player gets, or a recording that
+        // ended against a wall replays past it and off the map
+        g.px = Math.max(1.2, Math.min(this.MAP-2.2, g.px));
+        g.py = Math.max(1.2, Math.min(this.MAP-2.2, g.py));
       }
       g.t++;
       this.ex = g.px; this.ey = g.py;
@@ -1329,10 +1337,12 @@ GAMES.ghost = {
     this.ehp--; this.hitFlash = 8;
     if (this.ehp <= 0){                               // launch it toward the wall
       this.ekx = (dx/d) * 1.05; this.eky = (dy/d) * 1.05;
-      this.ehp = this.EHP;                            // survives unless it hits the wall
+      // NOT restored to EHP: the ring-out must complete the kill, or the hit is
+      // refunded and you re-fight the same enemy from full health
       beepHigh();
     } else {
-      this.ekx += (dx/d) * 0.35; this.eky += (dy/d) * 0.35;
+      this.ekx = Math.max(-1.05, Math.min(1.05, this.ekx + (dx/d) * 0.35));
+      this.eky = Math.max(-1.05, Math.min(1.05, this.eky + (dy/d) * 0.35));
       blip();
     }
   },
@@ -1345,7 +1355,7 @@ GAMES.ghost = {
     const ang = Math.atan2(dy, dx) - g.pa;
     const a = Math.atan2(Math.sin(ang), Math.cos(ang));
     if (Math.abs(a) > this.ARC) return;
-    this.hp--; this.hurtFlash = 8; this.ihurt = 45;
+    this.hp--; this.hurtFlash = 8; this.ihurt = this.ATTACK_T;  // i-frames must be <= the attack cadence, or a replay can never hit twice
     this.pkx = (dx/d) * 0.9; this.pky = (dy/d) * 0.9;   // knock the player back
     beepBack();
     if (this.hp <= 0) this.rungOut();
@@ -1400,9 +1410,12 @@ GAMES.ghost = {
     const dx = this.ex - px_, dy = this.ey - py_;
     const det = planeX * dirY - dirX * planeY;        // camera matrix determinant
     const tx = (dirY * dx - dirX * dy) / det;
-    const tz = (-planeX * dy + planeY * dx) / det;
+    // ponytail: the depth sign — shipped as (-planeX*dy + planeY*dx)/det, which
+    // is NEGATIVE for enemies in front, so the cull below hid the opponent the
+    // whole game and drew it when behind you. planeX*dy - planeY*dx is forward.
+    const tz = (planeX * dy - planeY * dx) / det;
     if (tz > 0.1){
-      const cx = Math.floor((W/2) * (1 + tx));
+      const cx = Math.floor((W/2) * (1 + tx / tz));   // perspective divide — without it every off-axis enemy is misplaced
       const shH = Math.floor(H / tz);
       if (shH > 0){
         const sw = Math.max(2, shH >> 2);             // sprite width on screen
