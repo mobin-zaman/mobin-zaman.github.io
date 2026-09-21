@@ -351,7 +351,7 @@
   <b>D-PAD</b>/arrows move &nbsp;·&nbsp; <b>A</b> select/enter <kbd>Z</kbd> <kbd>↵</kbd><br>
   <b>B</b> back <kbd>X</kbd> &nbsp;·&nbsp; <b>SELECT</b> home <kbd>Shift</kbd> &nbsp;·&nbsp; <b>START</b> open menu<br>
   <b>M</b> sound on/off — tune in, strings through radio static<br>
-  <b>Games</b> — D-PAD to play, <b>A</b> pause/serve, <b>B</b> quit; best score saved on the cart
+  <b>Games</b> — D-PAD to play, <b>A</b> pause/serve/attack, <b>B</b> quit; best score saved on the cart
 </div>
 
 <footer>
@@ -426,8 +426,7 @@ const SITE = {
         { name: "Snake",   game: "snake" },
         { name: "Pong",    game: "pong" },
         { name: "Breakout", game: "breakout" },
-        { name: "Tetris",   game: "tetris" },
-        { name: "Reversi", game: "reversi" }
+        { name: "Ghost",    game: "ghost" }
     ]},
     { key: "contact", title: "Contact", note: "LINKS", page: {
         lines: [
@@ -836,7 +835,7 @@ document.addEventListener("keyup", e=>{
 }));
 
 /* ------------------------------------------------------------------ *
- *  Games — SNAKE / PONG / BREAKOUT / TETRIS / REVERSI. One canvas, one rAF
+ *  Games — SNAKE / PONG / BREAKOUT / GHOST. One canvas, one rAF
  *  Input via gameInput(btn), same dispatcher as the rest of the site.
  * ------------------------------------------------------------------ */
 const G = {           // active game state
@@ -1158,244 +1157,281 @@ GAMES.breakout = {
   }
 };
 
-/* ================================================================ TETRIS
- * stack the falling blocks; full rows clear and it speeds up.
- * D-PAD moves, UP spins, A hard-drops. */
-GAMES.tetris = {
-  title: "Tetris", tps: 12,
-  W: 10, H: 18, u: 4, ox: 16, oy: 6,          // 40x72 well + NEXT panel on the right
-  pieces: {
-    I: [[1,1,1,1]],                O: [[1,1],[1,1]],  T: [[0,1,0],[1,1,1]],
-    S: [[0,1,1],[1,1,0]],          Z: [[1,1,0],[0,1,1]],
-    J: [[1,0,0],[1,1,1]],          L: [[0,0,1],[1,1,1]]
-  },
-  keys(){ return Object.keys(this.pieces); },
+/* ================================================================ GHOST
+ * Raycast pseudo-3D arena brawler. L/R turn, UP/DOWN walk, A attack.
+ * Every tick of YOUR movement is recorded; the next enemy replays it as a
+ * GHOST — the AI is your own last round, so it is always matched to you.
+ * Knock the enemy into the arena wall to ring it out. It can ring you out
+ * too — same melee rules, mirrored. */
+GAMES.ghost = {
+  title: "Ghost", tps: 15,
+  MAP: 12,                    // 12x12 arena, 1 = wall
+  FOV: 0.66,                  // camera plane length = 2*tan(halfFov)
+  ATTACK_T: 20,               // attack animation length in ticks
+  REACH: 1.5,                 // melee reach in map units
+  ARC: 0.8,                   // half-angle of the melee arc (radians)
+  HP: 3, EHP: 2,              // player / enemy health
+  WALL: 0.55,                 // inside this of the border = ring out
+  REC_MAX: 900,               // cap the recording (ticks) so it can't grow forever
+  DIRS: { UP: 1, DOWN: 2, LEFT: 3, RIGHT: 4 },
   init(){
-    this.grid = Array.from({length: this.H}, () => Array(this.W).fill(-1));
-    this.score = 0; this.lines = 0; this.dropAcc = 0;
-    this.next = null;
-    G.mode = "playing";
-    this.spawn();
-    status("LINES 0"); help("D-PAD MOVE · UP SPIN · A DROP · B QUIT");
-  },
-  spawn(){
-    const ks = this.keys();
-    const k = this.next || ks[Math.floor(Math.random()*ks.length)];
-    this.next = ks[Math.floor(Math.random()*ks.length)];
-    this.key = k; this.shape = this.pieces[k].map(r => r.slice());
-    this.shade = ks.indexOf(k) % 3;                    // 4 LCD shades for 7 pieces: I/J share, etc.
-    this.px = Math.floor((this.W - this.shape[0].length) / 2);
-    this.py = 0;
-    if (this.collides(this.shape, this.px, this.py)) this.gameOver();
-  },
-  collides(shape, nx, ny){
-    for (let r = 0; r < shape.length; r++) for (let c = 0; c < shape[r].length; c++){
-      if (!shape[r][c]) continue;
-      const x = nx + c, y = ny + r;
-      if (x < 0 || x >= this.W || y >= this.H) return true;
-      if (y >= 0 && this.grid[y][x] !== -1) return true;
+    this.map = [];
+    for (let y = 0; y < this.MAP; y++){
+      const row = [];
+      for (let x = 0; x < this.MAP; x++)
+        row.push((x === 0 || y === 0 || x === this.MAP-1 || y === this.MAP-1) ? 1 : 0);
+      this.map.push(row);
     }
-    return false;
+    const m = this.MAP/2;
+    this.px = m; this.py = m; this.pa = 0;        // player center, facing +x
+    this.pkx = 0; this.pky = 0;                   // player knockback velocity
+    this.bob = 0; this.vyo = 0;                   // view bob
+    this.hp = this.HP; this.ihurt = 0;
+    this.rec = [];                                // per-tick [dirByte, attackFlag]
+    this.recT0 = 0;                               // tick the rec[0] entry was recorded at
+    this.ghost = null;                            // { x, y, a, t, i, plan }
+    this.kills = 0;
+    this.attackT = 0; this.hitFlash = 0; this.hurtFlash = 0;
+    this.eturnT = 0; this.edx = 0; this.edy = 0;
+    this.spawnEnemy(true);
+    G.mode = "countdown"; this.cd = 3; this.cdAcc = 0;
+    status("KNOCK IT OUT"); help("L/R TURN · UP FWD · A ATTACK · B QUIT");
   },
-  gameOver(){
-    G.mode = "over";
-    const b = setBest("tetris", this.score);
-    status("GAME OVER · " + (b ? "NEW BEST!" : "BEST " + getBest("tetris")));
-    help("A RESTART · B QUIT"); beepBack();
+  spawnEnemy(fresh){
+    const m = this.MAP/2;
+    if (!fresh && this.rec.length >= 30){         // replay your last round
+      // ghost body uses the SAME px/py/pa names as the player so one
+      // applyInput() serves both — the bug that froze the player was two
+      // different position-vocabularies on one shared movement function
+      this.ghost = { px: m, py: m, pa: 0, t: 0, i: 0, plan: this.rec };
+      this.ex = m; this.ey = m;
+    } else {                                      // fresh wanderer
+      this.ghost = null;
+      let tries = 0;
+      do {
+        this.ex = 2 + Math.random() * (this.MAP - 4);
+        this.ey = 2 + Math.random() * (this.MAP - 4);
+        tries++;
+      } while (tries < 60 && this.dist(this.ex, this.ey) < 3);
+    }
+    this.ehp = this.EHP; this.ekx = 0; this.eky = 0;
   },
+  dist(x, y){ const dx = x - this.px, dy = y - this.py; return Math.hypot(dx, dy); },
   input(btn){
     if (btn === "A"){
       if (G.mode === "over"){ this.init(); blip(); return; }
-      if (G.mode === "playing"){ this.hardDrop(); blip(); }
+      if (G.mode === "playing" && this.attackT <= 0){ this.attackT = this.ATTACK_T; blip(); }
       return;
     }
-    if (G.mode !== "playing") return;
-    if (btn === "LEFT"  && !this.collides(this.shape, this.px-1, this.py)) this.px--;
-    if (btn === "RIGHT" && !this.collides(this.shape, this.px+1, this.py)) this.px++;
-    if (btn === "UP") this.spin();
-    if (btn === "DOWN"){
-      if (!this.collides(this.shape, this.px, this.py+1)) this.py++;
-      else this.lock();
-    }
+    if (G.mode !== "playing" && G.mode !== "countdown") return;
+    // a TAP must still move once, not wait for the next step() tick
+    if (btn === "LEFT" || btn === "RIGHT" || btn === "UP" || btn === "DOWN")
+      this.applyInput(btn, this);
   },
-  spin(){                                             // clockwise matrix rotation
-    const r = this.shape[0].map((_, i) => this.shape.map(row => row[i]).reverse());
-    if (!this.collides(r, this.px, this.py)) this.shape = r;
-  },
-  hardDrop(){
-    while (!this.collides(this.shape, this.px, this.py+1)) this.py++;
-    this.lock();
-  },
-  lock(){
-    for (let r = 0; r < this.shape.length; r++) for (let c = 0; c < this.shape[r].length; c++)
-      if (this.shape[r][c] && this.py + r >= 0) this.grid[this.py+r][this.px+c] = this.shade;
-    let cleared = 0;
-    for (let y = this.H-1; y >= 0; y--){
-      if (this.grid[y].every(v => v !== -1)){
-        this.grid.splice(y, 1); this.grid.unshift(Array(this.W).fill(-1));
-        cleared++; y++;                               // rows shifted down: re-check this index
-      }
-    }
-    if (cleared){
-      this.lines += cleared;
-      this.score += cleared * 10 * cleared;           // singles cheap, quads pay
-      beepHigh(); status("LINES " + this.lines + " · SCORE " + this.score);
-    } else blip();
-    this.spawn();
+  // applies one tick of movement to a {px,py,pa} triplet — the player or a ghost
+  applyInput(btn, e){
+    if (btn === "LEFT"){ e.pa -= 0.14; }
+    else if (btn === "RIGHT"){ e.pa += 0.14; }
+    else if (btn === "UP"){ e.px += Math.cos(e.pa) * 0.22; e.py += Math.sin(e.pa) * 0.22; }
+    else if (btn === "DOWN"){ e.px -= Math.cos(e.pa) * 0.011; e.py -= Math.sin(e.pa) * 0.011; }
   },
   step(){
-    if (G.mode !== "playing") return;
-    const speed = Math.max(3, 12 - Math.floor(this.lines / 5));   // faster every 5 lines
-    if (++this.dropAcc >= speed){ this.dropAcc = 0;
-      if (!this.collides(this.shape, this.px, this.py+1)) this.py++;
-      else this.lock();
+    if (G.mode !== "countdown" && G.mode !== "playing") return;
+    if (G.mode === "countdown"){
+      this.cdAcc += 1000/this.tps;
+      if (this.cdAcc >= 1000){ this.cdAcc = 0; this.cd--;
+        if (this.cd <= 0){ G.mode = "playing";
+          status("SCORE " + this.kills + " · BEST " + getBest("ghost")); } }
+      return;
+    }
+    if (this.attackT > 0) this.attackT--;
+    if (this.hitFlash > 0) this.hitFlash--;
+    if (this.hurtFlash > 0) this.hurtFlash--;
+    if (this.ihurt > 0) this.ihurt--;
+
+    // --- player: a held D-pad glides at the same per-tick rate as a tap ---
+    if (hold.dir) this.applyInput(hold.dir, this);
+    // record this tick: rec[t] = [dirByte, attackFlag]. Index == tick, so the
+    // ghost replays in lockstep — a SHIFTING cap would break that alignment,
+    // so the cap TRIMS instead (drops the oldest whole ticks and re-bases).
+    const atk = (this.attackT === this.ATTACK_T - 1);   // the tick the swing started
+    this.rec.push([this.DIRS[hold.dir] || 0, atk ? 1 : 0]);
+    if (this.rec.length > this.REC_MAX){ this.rec = this.rec.slice(-this.REC_MAX); this.recT0 += this.rec.length - this.REC_MAX; }
+
+    // knockback + clamp. The ring-out test must run BEFORE the friction decays
+    // the knockback below the 0.02 threshold — the enemy checks wall-first, and
+    // a different order here meant a launched player silently survived the wall.
+    const inWall = (this.px <= this.WALL || this.px >= this.MAP-1-this.WALL ||
+                    this.py <= this.WALL || this.py >= this.MAP-1-this.WALL);
+    const launching = (Math.abs(this.pkx) > 0.02 || Math.abs(this.pky) > 0.02);
+    if (inWall && launching) return this.rungOut();
+    this.px += this.pkx; this.py += this.pky;
+    this.pkx *= 0.85; this.pky *= 0.85;
+    this.px = Math.max(1.2, Math.min(this.MAP-2.2, this.px));
+    this.py = Math.max(1.2, Math.min(this.MAP-2.2, this.py));
+
+    const moving = (hold.dir === "UP" || hold.dir === "DOWN");
+    if (moving) this.bob += 0.35;
+    this.vyo = moving ? Math.sin(this.bob) * 1.2 : 0;
+
+    // --- enemy: replay the ghost plan, else wander ---
+    if (this.ghost){
+      const g = this.ghost;
+      // rec index == tick only while the buffer never shifted; re-base with recT0
+      while (g.i < g.plan.length && g.i <= g.t - this.recT0){       // rec index == tick: lockstep
+        const f = g.plan[g.i];
+        if (f[0]) this.applyInput(this.invDir(f[0]), g);
+        if (f[1]) this.ghostAttack();
+        g.i++;
+      }
+      g.t++;
+      this.ex = g.px; this.ey = g.py;
+      if (g.i >= g.plan.length) this.ghost = null;   // exhausted -> wander
+    }
+    if (!this.ghost){
+      if (--this.eturnT <= 0){                       // turn toward the player
+        this.edx = this.px - this.ex; this.edy = this.py - this.ey;
+        this.eturnT = 20 + Math.floor(Math.random()*25);
+      }
+      const len = Math.hypot(this.edx, this.edy) || 1;
+      this.ex += (this.edx/len) * 0.055;
+      this.ey += (this.edy/len) * 0.055;
+    }
+
+    // enemy knockback + clamp
+    this.ex += this.ekx; this.ey += this.eky;
+    this.ekx *= 0.85; this.eky *= 0.85;
+    this.ex = Math.max(0.4, Math.min(this.MAP-1.4, this.ex));
+    this.ey = Math.max(0.4, Math.min(this.MAP-1.4, this.ey));
+
+    // --- resolve the player's swing on the tick it started ---
+    if (atk) this.tryHit();
+
+    // --- enemy touching the border wall rings out ---
+    if (this.ex <= this.WALL || this.ex >= this.MAP-1-this.WALL ||
+        this.ey <= this.WALL || this.ey >= this.MAP-1-this.WALL){
+      this.kills++;
+      const b = setBest("ghost", this.kills);
+      if (b) jingle(); else beepHigh();
+      status("RING OUT! " + this.kills + " · " + (b ? "NEW BEST!" : "BEST " + getBest("ghost")));
+      this.spawnEnemy(false);
     }
   },
+  invDir(b){ return [null, "UP", "DOWN", "LEFT", "RIGHT"][b]; },
+  // the player's swing: enemy within REACH and inside ARC takes a hit
+  tryHit(){
+    const dx = this.ex - this.px, dy = this.ey - this.py;
+    const d = Math.hypot(dx, dy);
+    if (d > this.REACH || d < 1e-6) return;
+    const ang = Math.atan2(dy, dx) - this.pa;
+    const a = Math.atan2(Math.sin(ang), Math.cos(ang));     // wrap to -PI..PI
+    if (Math.abs(a) > this.ARC) return;
+    this.ehp--; this.hitFlash = 8;
+    if (this.ehp <= 0){                               // launch it toward the wall
+      this.ekx = (dx/d) * 1.05; this.eky = (dy/d) * 1.05;
+      this.ehp = this.EHP;                            // survives unless it hits the wall
+      beepHigh();
+    } else {
+      this.ekx += (dx/d) * 0.35; this.eky += (dy/d) * 0.35;
+      blip();
+    }
+  },
+  // the ghost's swing, mirrored: the player within REACH and inside the ghost's ARC
+  ghostAttack(){
+    const g = this.ghost;
+    const dx = this.px - g.px, dy = this.py - g.py;
+    const d = Math.hypot(dx, dy);
+    if (d > this.REACH || d < 1e-6 || this.ihurt > 0) return;
+    const ang = Math.atan2(dy, dx) - g.pa;
+    const a = Math.atan2(Math.sin(ang), Math.cos(ang));
+    if (Math.abs(a) > this.ARC) return;
+    this.hp--; this.hurtFlash = 8; this.ihurt = 45;
+    this.pkx = (dx/d) * 0.9; this.pky = (dy/d) * 0.9;   // knock the player back
+    beepBack();
+    if (this.hp <= 0) this.rungOut();
+    else status("HP " + this.hp + " · SCORE " + this.kills);
+  },
+  rungOut(){
+    G.mode = "over";
+    const b = setBest("ghost", this.kills);
+    status("GAME OVER · " + this.kills + " · " + (b ? "NEW BEST!" : "BEST " + getBest("ghost")));
+    help("A RESTART · B QUIT");
+    beepBack();
+  },
+  /* --- raycast render: one ray per column, sprite drawn last --- */
   draw(){
+    const c = ctx(), W = G.cv().width, H = G.cv().height;
     clearLcd();
-    const c = ctx(), u = this.u;
-    c.fillStyle = LCD_SHADES[2];                      // well frame
-    c.fillRect(this.ox-2, this.oy-2, this.W*u+4, 2);
-    c.fillRect(this.ox-2, this.oy+this.H*u, this.W*u+4, 2);
-    c.fillRect(this.ox-2, this.oy-2, 2, this.H*u+4);
-    c.fillRect(this.ox+this.W*u, this.oy-2, 2, this.H*u+4);
-    for (let y = 0; y < this.H; y++) for (let x = 0; x < this.W; x++){
-      const v = this.grid[y][x];
-      if (v !== -1){ c.fillStyle = LCD_SHADES[v]; c.fillRect(this.ox+x*u, this.oy+y*u, u, u); }
+    const px_ = this.px, py_ = this.py;
+    const dirX = Math.cos(this.pa), dirY = Math.sin(this.pa);
+    const planeX = -dirY * this.FOV, planeY = dirX * this.FOV;
+    const zbuf = new Array(W);
+    for (let x = 0; x < W; x++){
+      const camX = 2 * x / W - 1;                    // -1..1 across the screen
+      const rdx = dirX + planeX * camX, rdy = dirY + planeY * camX;
+      let mapX = Math.floor(px_), mapY = Math.floor(py_);
+      const ddx = rdx === 0 ? 1e30 : Math.abs(1/rdx);
+      const ddy = rdy === 0 ? 1e30 : Math.abs(1/rdy);
+      let stepX, stepY, sdx, sdy;
+      if (rdx < 0){ stepX = -1; sdx = (px_ - mapX) * ddx; } else { stepX = 1; sdx = (mapX + 1 - px_) * ddx; }
+      if (rdy < 0){ stepY = -1; sdy = (py_ - mapY) * ddy; } else { stepY = 1; sdy = (mapY + 1 - py_) * ddy; }
+      let side = 0, hit = 0, guard = 0;
+      while (!hit && guard++ < 40){
+        if (sdx < sdy){ sdx += ddx; mapX += stepX; side = 0; }
+        else { sdy += ddy; mapY += stepY; side = 1; }
+        if (this.map[mapY] && this.map[mapY][mapX]) hit = 1;
+      }
+      const perp = side === 0 ? (sdx - ddx) : (sdy - ddy);
+      const dist = Math.max(perp, 0.02);
+      zbuf[x] = dist;
+      const lineH = Math.floor(H / dist);
+      let y0 = Math.floor((H - lineH)/2 + this.vyo), y1 = y0 + lineH;
+      if (y0 < 0) y0 = 0; if (y1 > H) y1 = H;
+      // shade by distance + side: far walls fade toward the LCD background
+      let sh = dist > 6 ? 2 : (side ? 1 : 0);
+      if (this.attackT > 0 && this.attackT > this.ATTACK_T - 10){  // attack swipe tint
+        const rel = (x / W) * 2 - 1;
+        if (Math.abs(rel) < 0.55) sh = 2;
+      }
+      c.fillStyle = LCD_SHADES[sh];
+      c.fillRect(x, y0, 1, y1 - y0);
     }
-    if (G.mode === "playing")
-      for (let r = 0; r < this.shape.length; r++) for (let cc = 0; cc < this.shape[r].length; cc++)
-        if (this.shape[r][cc]){ c.fillStyle = LCD_SHADES[this.shade]; c.fillRect(this.ox+(this.px+cc)*u, this.oy+(this.py+r)*u, u, u); }
-    const nx = this.ox + this.W*u + 8;                // NEXT panel
-    paintText("NEXT", nx, this.oy, 1);
-    if (this.next){
-      const p = this.pieces[this.next];
-      for (let r = 0; r < p.length; r++) for (let cc = 0; cc < p[r].length; cc++)
-        if (p[r][cc]){ c.fillStyle = LCD_SHADES[1]; c.fillRect(nx + cc*u, this.oy+12 + r*u, u, u); }
+    // enemy sprite: billboarded, z-buffered
+    const dx = this.ex - px_, dy = this.ey - py_;
+    const det = planeX * dirY - dirX * planeY;        // camera matrix determinant
+    const tx = (dirY * dx - dirX * dy) / det;
+    const tz = (-planeX * dy + planeY * dx) / det;
+    if (tz > 0.1){
+      const cx = Math.floor((W/2) * (1 + tx));
+      const shH = Math.floor(H / tz);
+      if (shH > 0){
+        const sw = Math.max(2, shH >> 2);             // sprite width on screen
+        const y0 = Math.max(0, Math.floor(H/2 - shH/2 + this.vyo));
+        // draw only the columns not hidden behind a closer wall
+        c.fillStyle = this.hitFlash > 0 ? LCD_SHADES[3]
+                     : (this.ghost ? LCD_SHADES[0] : LCD_SHADES[1]);
+        for (let xx = Math.max(0, cx - (sw >> 1)); xx < Math.min(W, cx + (sw >> 1)); xx++)
+          if (tz < zbuf[xx]) c.fillRect(xx, y0, 1, Math.min(shH, H - y0));
+      }
     }
+    // HUD: HP pips (left) + attack-ready pip (right)
+    for (let i = 0; i < this.HP; i++){
+      c.fillStyle = i < this.hp ? LCD_SHADES[0] : LCD_SHADES[2];
+      c.fillRect(4 + i*6, H-8, 4, 4);
+    }
+    if (this.attackT <= 0){ c.fillStyle = LCD_SHADES[1]; c.fillRect(W-8, H-8, 4, 4); }
+    if (this.hurtFlash > 0){                          // damage vignette: top + bottom edge
+      c.fillStyle = LCD_SHADES[0]; c.fillRect(0, 0, W, 2); c.fillRect(0, H-2, W, 2);
+    }
+    if (G.mode === "countdown"){ paintText("READY " + Math.max(this.cd,1), 8, 34, 0); return; }
     if (G.mode === "over"){
-      c.fillStyle = LCD_SHADES[3]; c.fillRect(8, 32, 80, 20);
-      paintText("GAME OVER", 14, 38, 0);
-      paintText("SCORE " + this.score, 14, 48, 1);
+      c.fillStyle = LCD_SHADES[3]; c.fillRect(8, 26, 80, 30);
+      paintText("GAME OVER", 14, 32, 0);
+      paintText("SCORE " + this.kills, 14, 44, 0);
     }
   }
 };
 
-/* ================================================================ REVERSI
- * you (dark) vs the CPU (light) on a 6x6 board. Turn-based: the loop only
- * paces the CPU's think pause, so step() is nearly empty. */
-GAMES.reversi = {
-  title: "Reversi", tps: 8,
-  N: 6, u: 12, ox: 12, oy: 6,                        // 72x72 board inside the 96x84 screen
-  DIRS: [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]],
-  init(){
-    this.b = Array.from({length: this.N}, () => Array(this.N).fill(0));
-    const m = this.N/2 - 1;
-    this.b[m][m] = 2; this.b[m+1][m+1] = 2;
-    this.b[m][m+1] = 1; this.b[m+1][m] = 1;
-    this.turn = 1; this.cx = m; this.cy = m; this.think = 0;
-    G.mode = "playing";
-    this.hint();
-  },
-  flips(x, y, p, board){                              // discs a move at (x,y) would flip
-    if (board[y][x]) return [];
-    const out = [];
-    for (const [dx, dy] of this.DIRS){
-      const line = [];
-      let nx = x+dx, ny = y+dy;
-      while (nx >= 0 && nx < this.N && ny >= 0 && ny < this.N && board[ny][nx] === 3-p){
-        line.push([nx, ny]); nx += dx; ny += dy;
-      }
-      if (line.length && nx >= 0 && nx < this.N && ny >= 0 && ny < this.N && board[ny][nx] === p)
-        out.push(...line);
-    }
-    return out;
-  },
-  legal(p, board){
-    const list = [];
-    for (let y = 0; y < this.N; y++) for (let x = 0; x < this.N; x++)
-      if (this.flips(x, y, p, board).length) list.push([x, y]);
-    return list;
-  },
-  count(p){ let n = 0; for (let y = 0; y < this.N; y++) for (let x = 0; x < this.N; x++) if (this.b[y][x] === p) n++; return n; },
-  hint(){
-    const mine = this.legal(this.turn, this.b).length, theirs = this.legal(3-this.turn, this.b).length;
-    if (!mine && !theirs){ this.end(); return; }
-    if (!mine){ this.turn = 3-this.turn; status("PASS · CPU TURN"); }   // no move: skip
-    else status(this.turn === 1 ? "YOUR TURN · " + this.count(1) + "/" + this.count(2) : "CPU TURN · " + this.count(1) + "/" + this.count(2));
-    help("D-PAD MOVE · A PLACE · B QUIT");
-  },
-  end(){
-    G.mode = "over";
-    const s = this.count(1) - this.count(2);
-    const b = s > 0 && setBest("reversi", s);
-    status(s > 0 ? "YOU WIN +" + s : s === 0 ? "DRAW" : "CPU WINS");
-    help((b ? "NEW BEST! · " : "") + "A RESTART · B QUIT");
-    if (s > 0) jingle(); else beepBack();
-  },
-  place(x, y, p){
-    this.b[y][x] = p;
-    for (const [fx, fy] of this.flips(x, y, p, this.b)) this.b[fy][fx] = p;
-    blip();
-    this.turn = 3-p;
-    this.hint();
-  },
-  input(btn){
-    if (btn === "A"){
-      if (G.mode === "over"){ this.init(); blip(); return; }
-      if (this.turn !== 1) return;                    // not your turn
-      if (this.flips(this.cx, this.cy, 1, this.b).length) this.place(this.cx, this.cy, 1);
-      else beepBack();                                // square isn't a legal move
-      return;
-    }
-    if (G.mode !== "playing") return;
-    if (btn === "LEFT")  this.cx = (this.cx + this.N - 1) % this.N;
-    if (btn === "RIGHT") this.cx = (this.cx + 1) % this.N;
-    if (btn === "UP")    this.cy = (this.cy + this.N - 1) % this.N;
-    if (btn === "DOWN")  this.cy = (this.cy + 1) % this.N;
-  },
-  step(){
-    if (G.mode !== "playing" || this.turn !== 2) return;
-    if (++this.think < 14) return;                    // ~1.7s pause so the CPU move reads as a move
-    this.think = 0;
-    const moves = this.legal(2, this.b);
-    if (!moves.length){ this.turn = 1; this.hint(); return; }
-    let best = moves[0], bestN = -1;                  // greedy: most discs flipped
-    for (const [x, y] of moves){
-      const n = this.flips(x, y, 2, this.b).length;
-      if (n > bestN){ bestN = n; best = [x, y]; }
-    }
-    this.place(best[0], best[1], 2);
-  },
-  draw(){
-    clearLcd();
-    const c = ctx(), u = this.u;
-    c.fillStyle = LCD_SHADES[2]; c.fillRect(this.ox-2, this.oy-2, this.N*u+4, this.N*u+4);
-    c.fillStyle = LCD_SHADES[0]; c.fillRect(this.ox, this.oy, this.N*u, this.N*u);   // dark felt
-    c.fillStyle = LCD_SHADES[2];
-    for (let i = 1; i < this.N; i++){ c.fillRect(this.ox+i*u, this.oy, 1, this.N*u); c.fillRect(this.ox, this.oy+i*u, this.N*u, 1); }
-    for (let y = 0; y < this.N; y++) for (let x = 0; x < this.N; x++){
-      const v = this.b[y][x];
-      if (v){ c.fillStyle = LCD_SHADES[v === 1 ? 0 : 2]; c.fillRect(this.ox+x*u+3, this.oy+y*u+3, u-6, u-6); }
-    }
-    if (G.mode === "playing" && this.turn === 1){
-      for (const [x, y] of this.legal(1, this.b)){    // legal-move dots
-        c.fillStyle = LCD_SHADES[1];
-        c.fillRect(this.ox+x*u + u/2 - 1, this.oy+y*u + u/2 - 1, 2, 2);
-      }
-      const bx = this.ox+this.cx*u, by = this.oy+this.cy*u;   // cursor brackets
-      c.fillStyle = LCD_SHADES[3];
-      c.fillRect(bx+1, by+1, u-2, 2); c.fillRect(bx+1, by+u-3, u-2, 2);
-      c.fillRect(bx+1, by+1, 2, u-2); c.fillRect(bx+u-3, by+1, 2, u-2);
-    }
-    if (G.mode === "over"){
-      const s1 = this.count(1), s2 = this.count(2);
-      c.fillStyle = LCD_SHADES[3]; c.fillRect(10, 30, 76, 22);
-      paintText(s1 > s2 ? "YOU WIN!" : s1 === s2 ? "DRAW" : "CPU WINS", 18, 36, 0);
-      paintText(s1 + " / " + s2, 18, 46, 1);
-    }
-  }
-};
 
 /* ------------------------------------------------------------------ *
  *  Boot
