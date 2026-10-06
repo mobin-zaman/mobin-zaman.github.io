@@ -54,7 +54,7 @@
     letter-spacing: 2px;
     text-align: center;
   }
-  .gameboy {
+  .handheld {
     background: var(--shell);
     width: min(420px, 100%);
     padding: 24px 24px 46px;
@@ -284,7 +284,7 @@
 
 <h1 class="page">MOBIN.EXE</h1>
 
-<div class="gameboy" id="gameboy">
+<div class="handheld" id="gameboy">
   <audio id="music-audio" src="assets/rv356-radio.mp3" preload="auto"></audio>
   <div class="screen-bezel">
     <div class="lcd" id="lcd">
@@ -344,7 +344,7 @@
       <div class="ss-btn-wrap" id="btn-start" role="button" tabindex="0" aria-label="START (menu)"><div class="ss-btn"></div><div class="ss-label">START</div></div>
     </div>
   </div>
-  <div class="logo-bar">Mobin <span>DMG-01</span>™</div>
+  <div class="logo-bar">Mobin <span>HANDHELD</span>™</div>
 </div>
 
 <div class="legend">
@@ -625,7 +625,7 @@ function scrollSel(list, kind){
 }
 
 /* ------------------------------------------------------------------ *
-/*  8-bit UI beeps — synthesized Game Boy blips (stereo-panned), no files.
+/*  8-bit UI beeps — synthesized chiptune blips (stereo-panned), no files.
  *  Unlocks lazily on the first user gesture (autoplay policy).
  * ------------------------------------------------------------------ */
 let AC = null, soundOn = true, booted = false;
@@ -716,7 +716,7 @@ function stopMusicIfVisible(){
 }, { once:true }));
 
 /* ------------------------------------------------------------------ *
- *  Button dispatch — the gameboy controls all drive this.
+ *  Button dispatch — the console controls all drive this.
  * ------------------------------------------------------------------ */
 function press(btn){
   if (S.lock) return;
@@ -944,7 +944,7 @@ GAMES.snake = {
         if (this.cd <= 0){ G.mode = "playing"; } blip(); } return; }
     this.dir = this.nextDir;
     const head = { x: this.snake[0].x + this.dir.x, y: this.snake[0].y + this.dir.y };
-    // wrap-around walls (Game Boy Snake style)
+    // wrap-around walls (handheld Snake style)
     head.x = (head.x + 24) % 24; head.y = (head.y + 18) % 18;
     if (this.snake.some(s => s.x === head.x && s.y === head.y)){
       G.mode = "over"; const b = setBest("snake", this.score);
