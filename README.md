@@ -2,13 +2,13 @@
 
 Personal site for **Mohetuzzaman Mobin** — software engineer, AI agent consultant, bassist.
 
-A working **Game Boy DMG** replica, rebuilt from scratch. Navigate the whole
+A retro handheld console replica, rebuilt from scratch. Navigate the whole
 site with the console's own controls.
 
 ## The console
 
-- Faithful **Nintendo Game Boy DMG** shell, screen bezel ("DOT MATRIX WITH
-  STEREO SOUND", battery LED), and the classic **4-shade LCD palette**
+- Retro handheld shell, screen bezel ("MOBIN INDUSTRIES DOT MATRIX"), and the
+  classic **4-shade LCD palette**
   (#0f380f / #306230 / #8bac0f / #9bbc0f).
 - **ASCII-art avatar** on the title screen, generated from the chalk
   self-portrait (`assets/profile.jpg`).
